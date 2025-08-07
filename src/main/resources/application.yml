@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    active: dev
+
+  batch:
+    jdbc:
+      initialize-schema: never
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+      dialect: org.hibernate.dialect.MySQLDialect
+    generate-ddl: false
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true

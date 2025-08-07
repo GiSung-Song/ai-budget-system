@@ -1,0 +1,34 @@
+package com.budget.ai.response;
+
+import org.springframework.http.HttpStatus;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum ErrorCode {
+    // 공통
+    INTERNAL_ERROR("INTERNAL_ERROR", "서버 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // 인증
+    INVALID_TOKEN("INVALID_TOKEN", "유효하지 않은 토큰입니다.", HttpStatus.UNAUTHORIZED),
+    INVALID_LOGIN_REQUEST("INVALID_LOGIN_REQUEST", "로그인 요청이 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
+    EXPIRED_TOKEN("EXPIRED_TOKEN", "만료된 토큰입니다.", HttpStatus.UNAUTHORIZED),
+    INVALID_REFRESH_TOKEN("INVALID_REFRESH_TOKEN", "유효하지 않은 리프레시 토큰입니다.", HttpStatus.UNAUTHORIZED),
+    MISSING_JWT_PAYLOAD("MISSING_JWT_PAYLOAD", "JWT 페이로드가 누락되었습니다.", HttpStatus.BAD_REQUEST),
+
+    // 사용자
+    USER_NOT_FOUND("USER_NOT_FOUND", "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    USER_ALREADY_EXISTS("USER_ALREADY_EXISTS", "이미 존재하는 사용자입니다.", HttpStatus.CONFLICT),
+    USER_EMAIL_ALREADY_EXISTS("USER_EMAIL_ALREADY_EXISTS", "이미 존재하는 이메일입니다.", HttpStatus.CONFLICT),
+    ;
+
+    private final String code;
+    private final String message;
+    private final HttpStatus status;
+
+    public String getCode() { return code; }
+    public String getMessage() { return message; }
+    public HttpStatus getStatus() { return status; }
+}
