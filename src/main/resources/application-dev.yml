@@ -17,7 +17,7 @@ springdoc:
     enabled: true
 
 jwt:
-  secretKey: gisung-project-ai-budget-jwt-secret-key
+  secretKey: gisung-project-ai-budget-jwt-secret-key-is-mine
   access:
     expiration: 1800000
   refresh:

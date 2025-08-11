@@ -24,7 +24,6 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 @Configuration
 @EnableWebSecurity
-@Profile("!test")
 public class SecurityConfig {
     
     @Bean
@@ -58,6 +57,7 @@ public class SecurityConfig {
 
                         // 회원 관련 API
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/me/deletion").permitAll()
 
                         // Swagger 관련
                         .requestMatchers("/v3/api-docs/**").permitAll()
