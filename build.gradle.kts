@@ -62,6 +62,9 @@ dependencies {
 	annotationProcessor("org.projectlombok:lombok")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 
+	// flyway
+	implementation("org.flywaydb:flyway-core")
+	implementation("org.flywaydb:flyway-mysql")
 
 	// 통합 테스트용 Testcontainers
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
