@@ -39,7 +39,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             new PermitPass(null, "/swagger-ui.html"),
             new PermitPass(null, "/swagger-resources/**"),
             new PermitPass(null, "/webjars/**"),
-            new PermitPass(null, "/favicon.ico")
+            new PermitPass(null, "/favicon.ico"),
+            new PermitPass(null, "/outer/transaction")
     );
 
     @Override

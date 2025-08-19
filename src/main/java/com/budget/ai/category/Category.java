@@ -11,7 +11,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  * 카테고리 엔티티
  */
 @Entity
-@Table(name = "category")
+@Table(name = "categories")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Category extends BaseTimeEntity {
@@ -21,9 +21,11 @@ public class Category extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** 카테고리 코드 */
     @Column(nullable = false, unique = true, length = 50)
     private String code;
 
+    /** 카테고리 이름 */
     @Column(nullable = false, length = 100)
     private String displayName;
 }
