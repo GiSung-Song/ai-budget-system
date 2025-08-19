@@ -16,6 +16,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 회원 관련 Controller
+ * <p>
+ *     회원가입, 내 정보 조회, 비밀번호 변경, 회원탈퇴 기능 포함
+ * </p>
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")

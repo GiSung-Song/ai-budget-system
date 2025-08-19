@@ -25,6 +25,13 @@ public enum ErrorCode {
     USER_EMAIL_ALREADY_EXISTS("USER_EMAIL_ALREADY_EXISTS", "이미 존재하는 이메일입니다.", HttpStatus.CONFLICT),
     INVALID_CURRENT_PASSWORD("INVALID_CURRENT_PASSWORD", "현재 비밀번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
     USER_ALREADY_DELETED("USER_ALREADY_DELETED", "이미 탈퇴한 사용자입니다.", HttpStatus.CONFLICT),
+
+    // 카드
+    CARD_ALREADY_EXISTS("CARD_ALREADY_EXISTS", "이미 등록된 카드입니다.", HttpStatus.CONFLICT),
+    CARD_NOT_FOUND("CARD_NOT_FOUND", "등록되지 않은 카드입니다.", HttpStatus.NOT_FOUND),
+
+    // 카드 거래내역
+    CARD_TRANSACTION_ALREADY_EXISTS("CARD_TRANSACTION_ALREADY_EXISTS", "이미 존재하는 거래번호입니다.", HttpStatus.CONFLICT),
     ;
 
     private final String code;

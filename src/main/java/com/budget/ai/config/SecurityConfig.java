@@ -70,6 +70,9 @@ public class SecurityConfig {
                         .requestMatchers("/favicon.ico").permitAll()
                         .requestMatchers("/error").permitAll()
 
+                        // 가짜 외부 API
+                        .requestMatchers("/outer/transaction").permitAll()
+
                         // 나머지
                         .anyRequest().authenticated()
                 )
