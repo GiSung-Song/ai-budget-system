@@ -32,6 +32,12 @@ public enum ErrorCode {
 
     // 카드 거래내역
     CARD_TRANSACTION_ALREADY_EXISTS("CARD_TRANSACTION_ALREADY_EXISTS", "이미 존재하는 거래번호입니다.", HttpStatus.CONFLICT),
+
+    // API 호출
+    API_CALL_CLIENT_ERROR("API_CALL_CLIENT_ERROR", "API 호출 중 클라이언트 오류가 발생하였습니다.", HttpStatus.BAD_GATEWAY),
+    API_CALL_SERVER_ERROR("API_CALL_SERVER_ERROR", "API 호출 중 서버 오류가 발생하였습니다.", HttpStatus.BAD_GATEWAY),
+    API_CALL_TIMEOUT("API_CALL_TIMEOUT", "API 호출 중 응답 시간이 초과되었습니다.", HttpStatus.GATEWAY_TIMEOUT),
+    API_CALL_WRONG_ANSWER("API_CALL_WRONG_ANSWER", "API 호출 중 올바르지 않은 응답입니다.", HttpStatus.BAD_GATEWAY),
     ;
 
     private final String code;

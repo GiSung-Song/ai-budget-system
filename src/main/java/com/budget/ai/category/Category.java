@@ -11,7 +11,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
  * 카테고리 엔티티
  */
 @Entity
-@Table(name = "categories")
+@Table(name = "categories",
+        uniqueConstraints = @UniqueConstraint(name = "uq_categories_code", columnNames = "code")
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Category extends BaseTimeEntity {
