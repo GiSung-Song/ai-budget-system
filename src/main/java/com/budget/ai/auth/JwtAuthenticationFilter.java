@@ -33,12 +33,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             new PermitPass(HttpMethod.POST, "/api/auth/login"),
             new PermitPass(HttpMethod.POST, "/api/auth/refresh"),
             new PermitPass(HttpMethod.POST, "/api/users"),
+            new PermitPass(HttpMethod.DELETE, "/api/users/me/deletion"),
             new PermitPass(null, "/v3/api-docs/**"),
             new PermitPass(null, "/swagger-ui/**"),
             new PermitPass(null, "/swagger-ui.html"),
             new PermitPass(null, "/swagger-resources/**"),
             new PermitPass(null, "/webjars/**"),
-            new PermitPass(null, "/favicon.ico")
+            new PermitPass(null, "/favicon.ico"),
+            new PermitPass(null, "/outer/transaction")
     );
 
     @Override

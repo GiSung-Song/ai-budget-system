@@ -1,0 +1,16 @@
+spring:
+  data:
+    redis:
+      host: localhost
+
+  batch:
+    jdbc:
+      initialize-schema: always
+
+jwt:
+  secretKey: gisung-project-ai-budget-jwt-secret-key-is-mine
+  access:
+    expiration: 1800000
+
+  refresh:
+    expiration: 3600000

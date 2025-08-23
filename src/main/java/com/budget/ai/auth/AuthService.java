@@ -41,7 +41,11 @@ public class AuthService {
     public TokenResponse login(LoginRequest request) {
         // 사용자 조회
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_LOGIN_REQUEST));
+
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.DELETED_USER);
+        }
 
         // 비밀번호 검증
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
