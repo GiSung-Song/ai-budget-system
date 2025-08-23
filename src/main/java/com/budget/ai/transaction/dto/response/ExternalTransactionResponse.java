@@ -1,30 +1,25 @@
-package com.budget.ai.external.transaction.dto.response;
+package com.budget.ai.transaction.dto.response;
 
-import com.budget.ai.external.transaction.CardTransaction;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 /**
  * 카드 거래 내역 조회 응답 DTO
  */
 @Schema(description = "카드 거래 내역 조회 응답 DTO")
-public record CardTransactionResponse(
+public record ExternalTransactionResponse(
         @Schema(description = "카드 거래 목록")
-        List<CardTransactionInfo> cardTransactionList
+        List<TransactionInfo> cardTransactionList
 ) {
-    public record CardTransactionInfo(
+    public record TransactionInfo(
             @Schema(description = "카드사 거래 고유 ID", example = "TXN123456789")
             String merchantId,
 
             @Schema(description = "환불/취소 시 참조하는 카드사 거래 고유 ID", example = "TXN123456780")
             String originalMerchantId,
-
-            @Schema(description = "카드 번호", example = "123412341234")
-            String cardNumber,
 
             @Schema(description = "거래 금액", example = "12500.50")
             BigDecimal amount,
@@ -44,19 +39,5 @@ public record CardTransactionResponse(
             @Schema(description = "거래 상태", example = "APPROVED")
             String cardTransactionStatus
     ) {
-        public static CardTransactionInfo from(CardTransaction cardTransaction) {
-            return new CardTransactionInfo(
-                    cardTransaction.getMerchantId(),
-                    cardTransaction.getOriginalMerchantId(),
-                    cardTransaction.getCardNumber(),
-                    cardTransaction.getAmount(),
-                    cardTransaction.getMerchantName(),
-                    cardTransaction.getMerchantAddress(),
-                    cardTransaction.getTransactionAt()
-                            .atOffset(ZoneOffset.UTC),
-                    cardTransaction.getCardTransactionType().name(),
-                    cardTransaction.getCardTransactionStatus().name()
-            );
-        }
     }
 }

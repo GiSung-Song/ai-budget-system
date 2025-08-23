@@ -4,6 +4,9 @@ plugins {
 	id("io.spring.dependency-management") version "1.1.7"
 }
 
+val querydslVersion = "5.0.0"
+val generatedDir = "src/main/generated"
+
 group = "com.budget"
 version = "0.0.1-SNAPSHOT"
 
@@ -43,8 +46,19 @@ dependencies {
 	// Web
 	implementation("org.springframework.boot:spring-boot-starter-web")
 
+	// webflux
+	implementation("org.springframework.boot:spring-boot-starter-webflux")
+
 	// AOP
 	implementation("org.springframework.boot:spring-boot-starter-aop")
+
+	implementation("me.paulschwarz:spring-dotenv:3.0.0")
+
+	// QueryDSL
+	implementation("com.querydsl:querydsl-jpa:${querydslVersion}:jakarta")
+	annotationProcessor("com.querydsl:querydsl-apt:${querydslVersion}:jakarta")
+	annotationProcessor("jakarta.annotation:jakarta.annotation-api")
+	annotationProcessor("jakarta.persistence:jakarta.persistence-api")
 
 	// Swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
@@ -71,9 +85,29 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter:1.17.6")
     testImplementation("org.testcontainers:mysql:1.17.6")
 
+	// RestAssured
+	testImplementation("io.rest-assured:rest-assured")
+	testImplementation("io.rest-assured:json-path")
+	testImplementation("io.rest-assured:json-schema-validator")
+
 	testImplementation("org.springframework.batch:spring-batch-test")
 	testImplementation("org.springframework.security:spring-security-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<JavaCompile> {
+	options.generatedSourceOutputDirectory.set(file(generatedDir))
+	options.compilerArgs.add("-parameters")
+}
+
+sourceSets {
+	named("main") {
+		java.srcDir(generatedDir)
+	}
+}
+
+tasks.named<Delete>("clean") {
+	delete(file(generatedDir))
 }
 
 tasks.withType<Test> {

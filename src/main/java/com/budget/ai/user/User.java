@@ -13,7 +13,8 @@ import java.time.LocalDateTime;
  * 사용자 엔티티
  */
 @Entity
-@Table(name = "users")
+@Table(name = "users",
+        uniqueConstraints = @UniqueConstraint(name = "uq_users_email", columnNames = "email"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseTimeEntity {
