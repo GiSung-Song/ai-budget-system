@@ -25,8 +25,6 @@ public class QCardTransaction extends EntityPathBase<CardTransaction> {
 
     public final EnumPath<CardTransactionStatus> cardTransactionStatus = createEnum("cardTransactionStatus", CardTransactionStatus.class);
 
-    public final EnumPath<CardTransactionType> cardTransactionType = createEnum("cardTransactionType", CardTransactionType.class);
-
     public final NumberPath<Long> id = createNumber("id", Long.class);
 
     public final StringPath merchantAddress = createString("merchantAddress");

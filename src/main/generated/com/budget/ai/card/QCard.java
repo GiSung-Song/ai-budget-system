@@ -33,8 +33,6 @@ public class QCard extends EntityPathBase<Card> {
 
     public final NumberPath<Long> id = createNumber("id", Long.class);
 
-    public final DateTimePath<java.time.LocalDateTime> synchronizedAt = createDateTime("synchronizedAt", java.time.LocalDateTime.class);
-
     //inherited
     public final DateTimePath<java.time.LocalDateTime> updatedAt = _super.updatedAt;
 

@@ -40,6 +40,8 @@ dependencies {
 	// Security
 	implementation("org.springframework.boot:spring-boot-starter-security")
 
+	implementation("io.github.resilience4j:resilience4j-ratelimiter:2.2.0")
+
 	// 검증
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 

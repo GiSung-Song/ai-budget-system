@@ -55,12 +55,7 @@ public class CardTransaction {
     @Column(nullable = false)
     private LocalDateTime transactionAt;
 
-    /** 거래 유형 (PAYMENT, WITHDRAW, DEPOSIT, TRANSFER) */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private CardTransactionType cardTransactionType;
-
-    /** 거래 상태 (APPROVED, REFUND, CANCELED) */
+    /** 거래 상태 (APPROVED, CANCELED) */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CardTransactionStatus cardTransactionStatus;
@@ -73,7 +68,6 @@ public class CardTransaction {
                            String merchantName,
                            String merchantAddress,
                            LocalDateTime transactionAt,
-                           CardTransactionType cardTransactionType,
                            CardTransactionStatus cardTransactionStatus) {
         this.merchantId = merchantId;
         this.originalMerchantId = originalMerchantId;
@@ -82,7 +76,6 @@ public class CardTransaction {
         this.merchantName = merchantName;
         this.merchantAddress = merchantAddress;
         this.transactionAt = transactionAt;
-        this.cardTransactionType = cardTransactionType;
         this.cardTransactionStatus = cardTransactionStatus;
     }
 }

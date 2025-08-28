@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Table(name = "transactions",
         uniqueConstraints = @UniqueConstraint(name = "uq_txn", columnNames = {"card_id", "merchant_id", "transaction_at"}),
         indexes = {
-                @Index(name = "idx_txn_time", columnList = "card_id, transaction_at"),
+                @Index(name = "idx_txn_time", columnList = "card_id, merchant_id, transaction_at"),
                 @Index(name = "idx_original_merchant", columnList = "original_merchant_id")
         })
 @Getter
@@ -89,14 +89,7 @@ public class Transaction extends BaseTimeEntity {
     private LocalDateTime transactionAt;
 
     /**
-     * 거래 유형 (PAYMENT, WITHDRAW, DEPOSIT, TRANSFER)
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TransactionType transactionType;
-
-    /**
-     * 거래 상태 (APPROVED, REFUND, CANCELED)
+     * 거래 상태 (APPROVED, CANCELED)
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

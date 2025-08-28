@@ -38,6 +38,7 @@ public enum ErrorCode {
     API_CALL_SERVER_ERROR("API_CALL_SERVER_ERROR", "API 호출 중 서버 오류가 발생하였습니다.", HttpStatus.BAD_GATEWAY),
     API_CALL_TIMEOUT("API_CALL_TIMEOUT", "API 호출 중 응답 시간이 초과되었습니다.", HttpStatus.GATEWAY_TIMEOUT),
     API_CALL_WRONG_ANSWER("API_CALL_WRONG_ANSWER", "API 호출 중 올바르지 않은 응답입니다.", HttpStatus.BAD_GATEWAY),
+    API_RATE_LIMIT_EXCEEDED("API_RATE_LIMIT_EXCEEDED", "API 호출 중 오류가 발생하였습니다.", HttpStatus.BAD_GATEWAY),
     ;
 
     private final String code;
