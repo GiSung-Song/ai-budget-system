@@ -2,7 +2,6 @@ package com.budget.ai.external.transaction.dto.request;
 
 import com.budget.ai.card.CardCompanyType;
 import com.budget.ai.external.transaction.CardTransactionStatus;
-import com.budget.ai.external.transaction.CardTransactionType;
 import com.budget.ai.valid.ValidEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
@@ -54,11 +53,6 @@ public record AddCardTransactionRequest(
         @Schema(description = "거래 시각", example = "2025-08-18T12:34:56+09:00")
         @NotNull(message = "거래 시각은 필수 입력 필드입니다.")
         OffsetDateTime transactionAt,
-
-        @Schema(description = "거래 유형", example = "PAYMENT")
-        @NotNull(message = "거래유형은 필수 입력 필드입니다.")
-        @ValidEnum(enumClass = CardTransactionType.class)
-        String cardTransactionType,
 
         @Schema(description = "거래 상태", example = "APPROVED")
         @NotNull(message = "거래 상태는 필수 입력 필드입니다.")

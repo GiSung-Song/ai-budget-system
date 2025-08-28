@@ -47,12 +47,14 @@ public class CardTransactionController {
             @ApiResponse(responseCode = "500", description = "서버 오류"),
     })
     @GetMapping
-    public ResponseEntity<CardTransactionResponse> addCardTransaction(
+    public ResponseEntity<CardTransactionResponse> getCardTransaction(
             @RequestParam String startDate,
+            @RequestParam String endDate,
             @RequestParam String cardNumber) {
 
-        OffsetDateTime offsetDateTime = OffsetDateTime.parse(startDate);
-        CardTransactionResponse cardTransactionList = cardTransactionService.getCardTransactionList(offsetDateTime, cardNumber);
+        OffsetDateTime osdStartDate = OffsetDateTime.parse(startDate);
+        OffsetDateTime osdEndDate = OffsetDateTime.parse(endDate);
+        CardTransactionResponse cardTransactionList = cardTransactionService.getCardTransactionList(osdStartDate, osdEndDate, cardNumber);
 
         return ResponseEntity.ok(cardTransactionList);
     }

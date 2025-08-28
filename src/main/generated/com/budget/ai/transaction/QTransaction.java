@@ -47,8 +47,6 @@ public class QTransaction extends EntityPathBase<Transaction> {
 
     public final EnumPath<TransactionStatus> transactionStatus = createEnum("transactionStatus", TransactionStatus.class);
 
-    public final EnumPath<TransactionType> transactionType = createEnum("transactionType", TransactionType.class);
-
     //inherited
     public final DateTimePath<java.time.LocalDateTime> updatedAt = _super.updatedAt;
 

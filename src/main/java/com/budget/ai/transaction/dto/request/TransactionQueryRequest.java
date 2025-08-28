@@ -1,10 +1,7 @@
 package com.budget.ai.transaction.dto.request;
 
 import com.budget.ai.transaction.TransactionStatus;
-import com.budget.ai.transaction.TransactionType;
-import com.budget.ai.valid.ValidEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -39,9 +36,6 @@ public record TransactionQueryRequest(
 
         @Schema(description = "거래 상태", example = "APPROVED")
         TransactionStatus transactionStatus,
-
-        @Schema(description = "거래 타입", example = "PAYMENT")
-        TransactionType transactionType,
 
         @Schema(description = "상호명", example = "스타벅스 도봉점")
         String merchantName,

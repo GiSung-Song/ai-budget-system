@@ -7,5 +7,5 @@ package com.budget.ai.external.transaction;
  * </p>
  */
 public enum CardTransactionStatus {
-    APPROVED, REFUND, CANCELED
+    APPROVED, CANCELED
 }

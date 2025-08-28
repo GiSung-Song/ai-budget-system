@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum TransactionStatus {
     APPROVED("승인"),
-    REFUND("환불"),
     CANCELED("취소");
 
     private final String displayName;

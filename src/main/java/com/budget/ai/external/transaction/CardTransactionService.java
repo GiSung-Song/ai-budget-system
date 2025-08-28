@@ -51,7 +51,6 @@ public class CardTransactionService {
                 .transactionAt(request.transactionAt()
                         .withOffsetSameInstant(ZoneOffset.UTC)
                         .toLocalDateTime())
-                .cardTransactionType(CardTransactionType.valueOf(request.cardTransactionType()))
                 .cardTransactionStatus(CardTransactionStatus.valueOf(request.cardTransactionStatus()))
                 .build();
 
@@ -59,19 +58,22 @@ public class CardTransactionService {
     }
 
     /**
-     * 특정 날짜 이후의 카드 거래 내역 조회
+     * 특정 기간 카드 거래 내역 조회 V2
      * @param startDate  조회 시작 날짜
+     * @param endDate    조회 종료 날짜
      * @param cardNumber 카드 번호
      * @return 카드 거래 내역
      */
-    public CardTransactionResponse getCardTransactionList(OffsetDateTime startDate, String cardNumber) {
-        LocalDateTime converted = startDate
+    public CardTransactionResponse getCardTransactionList(OffsetDateTime startDate, OffsetDateTime endDate, String cardNumber) {
+        LocalDateTime convStartDate = startDate
                 .withOffsetSameInstant(ZoneOffset.UTC)
                 .toLocalDateTime();
 
-        List<CardTransaction> cardTransactionList = cardTransactionRepository.findByCardNumberAndTransactionAtAfter(
-                cardNumber, converted
-        );
+        LocalDateTime convEndDate = endDate
+                .withOffsetSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime();
+
+        List<CardTransaction> cardTransactionList = cardTransactionRepository.findByCardNumberAndBetweenDate(cardNumber, convStartDate, convEndDate);
 
         List<CardTransactionResponse.CardTransactionInfo> cardTransactionInfoList = cardTransactionList.stream()
                 .map(cardTransaction -> CardTransactionResponse.CardTransactionInfo.from(cardTransaction))

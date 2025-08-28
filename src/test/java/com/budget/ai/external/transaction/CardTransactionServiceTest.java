@@ -67,7 +67,6 @@ class CardTransactionServiceTest {
                     "흥부 부대찌개 도봉점",
                     null,
                     OffsetDateTime.parse("2025-07-25T04:18:12+09:00"),
-                    CardTransactionType.PAYMENT.name(),
                     CardTransactionStatus.APPROVED.name()
             );
 
@@ -96,7 +95,6 @@ class CardTransactionServiceTest {
                     "50000.00",
                     "맥도날드 방학점",
                     "2025-08-15T03:22:32+09:00",
-                    CardTransactionType.PAYMENT,
                     CardTransactionStatus.APPROVED
             );
 
@@ -109,7 +107,6 @@ class CardTransactionServiceTest {
                     "흥부 부대찌개 도봉점",
                     null,
                     OffsetDateTime.parse("2025-07-25T04:18:12+09:00"),
-                    CardTransactionType.PAYMENT.name(),
                     CardTransactionStatus.APPROVED.name()
             );
 
@@ -134,7 +131,6 @@ class CardTransactionServiceTest {
                     "흥부 부대찌개 도봉점",
                     null,
                     OffsetDateTime.parse("2025-07-25T04:18:12+09:00"),
-                    CardTransactionType.PAYMENT.name(),
                     CardTransactionStatus.APPROVED.name()
             );
 
@@ -150,7 +146,7 @@ class CardTransactionServiceTest {
     }
 
     @Nested
-    class 거래내역_조회_테스트 {
+    class 거래내역_조회2_테스트 {
 
         private CardTransaction ct1;
         private CardTransaction ct2;
@@ -164,7 +160,6 @@ class CardTransactionServiceTest {
                     "13500.00",
                     "KFC 방학점",
                     "2025-08-10T05:10:15+09:00",
-                    CardTransactionType.PAYMENT,
                     CardTransactionStatus.APPROVED
             );
 
@@ -174,7 +169,6 @@ class CardTransactionServiceTest {
                     "29000.00",
                     "롯데리아 방학점",
                     "2025-08-12T21:20:58+09:00",
-                    CardTransactionType.PAYMENT,
                     CardTransactionStatus.APPROVED
             );
 
@@ -184,29 +178,30 @@ class CardTransactionServiceTest {
                     "38050.00",
                     "맥도날드 방학점",
                     "2025-08-14T15:38:04+09:00",
-                    CardTransactionType.PAYMENT,
                     CardTransactionStatus.APPROVED
             );
         }
 
         @Test
         void 거래내역_0건() {
-            OffsetDateTime offsetDateTime = OffsetDateTime.parse("2025-08-17T00:00:00+09:00");
+            OffsetDateTime startDate = OffsetDateTime.parse("2025-08-17T00:00:00+09:00");
+            OffsetDateTime endDate = OffsetDateTime.parse("2025-08-20T00:00:00+09:00");
             String cardNumber = "123412341234";
 
             CardTransactionResponse cardTransactionList
-                    = cardTransactionService.getCardTransactionList(offsetDateTime, cardNumber);
+                    = cardTransactionService.getCardTransactionList(startDate, endDate, cardNumber);
 
             assertThat(cardTransactionList.cardTransactionList()).isEmpty();
         }
 
         @Test
         void 거래내역_3건() {
-            OffsetDateTime offsetDateTime = OffsetDateTime.parse("2025-08-10T00:00:00+09:00");
+            OffsetDateTime startDate = OffsetDateTime.parse("2025-08-10T00:00:00+09:00");
+            OffsetDateTime endDate = OffsetDateTime.parse("2025-08-15T00:00:00+09:00");
             String cardNumber = "123412341234";
 
             CardTransactionResponse cardTransactionList
-                    = cardTransactionService.getCardTransactionList(offsetDateTime, cardNumber);
+                    = cardTransactionService.getCardTransactionList(startDate, endDate, cardNumber);
 
             List<CardTransactionResponse.CardTransactionInfo> result = cardTransactionList.cardTransactionList();
 
@@ -236,6 +231,5 @@ class CardTransactionServiceTest {
                             )
                     );
         }
-
     }
 }

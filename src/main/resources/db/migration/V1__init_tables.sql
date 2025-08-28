@@ -90,7 +90,7 @@ SELECT '버스', id FROM categories WHERE code = 'TRANSPORTATION'
 UNION ALL
 SELECT 'GS25', id FROM categories WHERE code = 'CONVENIENCE_STORE'
 UNION ALL
-SELECT '메가박스', id FROM categories WHERE code = 'LIVING'
+SELECT '메가박스', id FROM categories WHERE code = 'CULTURE'
 UNION ALL
 SELECT '홈플러스', id FROM categories WHERE code = 'MART'
 ;
@@ -116,6 +116,6 @@ CREATE TABLE transactions
     CONSTRAINT fk_transactions_cards      FOREIGN KEY (card_id)     REFERENCES cards(id),
     CONSTRAINT fk_transactions_categories FOREIGN KEY (category_id) REFERENCES categories(id),
     CONSTRAINT uq_txn UNIQUE (card_id, merchant_id, transaction_at),
-    INDEX idx_txn_time          (card_id, transaction_at),
+    INDEX idx_txn_time          (card_id, merchant_id, transaction_at),
     INDEX idx_original_merchant (original_merchant_id)
 )
