@@ -8,6 +8,7 @@ import com.budget.ai.response.CustomException;
 import com.budget.ai.response.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -27,6 +28,7 @@ public class CardTransactionService {
      * @param request 카드 거래 내역 추가 요청 DTO
      * @throws CustomException 카드사와 카드번호로 등록된 카드인지 조회 후 존재하지 않으면 발생
      */
+    @Transactional
     public void addCardTransaction(AddCardTransactionRequest request) {
         boolean existsTransaction = cardTransactionRepository.existsByMerchantIdAndCardNumber(request.merchantId(), request.cardNumber());
 
@@ -64,6 +66,7 @@ public class CardTransactionService {
      * @param cardNumber 카드 번호
      * @return 카드 거래 내역
      */
+    @Transactional(readOnly = true)
     public CardTransactionResponse getCardTransactionList(OffsetDateTime startDate, OffsetDateTime endDate, String cardNumber) {
         LocalDateTime convStartDate = startDate
                 .withOffsetSameInstant(ZoneOffset.UTC)

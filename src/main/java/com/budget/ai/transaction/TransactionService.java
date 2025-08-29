@@ -12,16 +12,22 @@ import com.budget.ai.response.ErrorCode;
 import com.budget.ai.transaction.dto.SumCategoryTransaction;
 import com.budget.ai.transaction.dto.request.TransactionQueryRequest;
 import com.budget.ai.transaction.dto.request.TransactionSyncRequest;
+import com.budget.ai.transaction.dto.response.CategorySavingResponse;
 import com.budget.ai.transaction.dto.response.ExternalTransactionResponse;
 import com.budget.ai.transaction.dto.response.SumCategoryTransactionResponse;
 import com.budget.ai.transaction.dto.response.TransactionResponse;
 import com.budget.ai.user.User;
 import com.budget.ai.user.UserRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.util.RateLimiter;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -30,10 +36,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
@@ -50,6 +53,7 @@ public class TransactionService {
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
     private final TransactionQueryRepository transactionQueryRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private final WebClient webClient;
 
@@ -59,6 +63,7 @@ public class TransactionService {
                               MerchantCategoryRepository merchantCategoryRepository,
                               CategoryRepository categoryRepository, TransactionRepository transactionRepository,
                               TransactionQueryRepository transactionQueryRepository,
+                              RedisTemplate<String, Object> redisTemplate,
                               @Qualifier("serviceWebClient") WebClient webClient,
                               OpenAIService openAIService) {
         this.userRepository = userRepository;
@@ -67,6 +72,7 @@ public class TransactionService {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.transactionQueryRepository = transactionQueryRepository;
+        this.redisTemplate = redisTemplate;
         this.webClient = webClient;
         this.openAIService = openAIService;
     }
@@ -78,6 +84,11 @@ public class TransactionService {
      * @param endDate   종료 날짜
      * @return 카테고리별 거래 내역
      */
+    @Cacheable(
+            value = "sumCategoryTransaction",
+            key = "#userId + ':' + #startDate.toString() + ':' + #endDate.toString()"
+    )
+    @Transactional(readOnly = true)
     public SumCategoryTransactionResponse getSumCategoryTransaction(Long userId, LocalDate startDate, LocalDate endDate) {
         LocalDateTime startTime = startDate.atStartOfDay(); // 00:00:00
         LocalDateTime endTime = endDate.atTime(LocalTime.MAX); // 23:59:59.999999
@@ -116,6 +127,7 @@ public class TransactionService {
      * @param userId  로그인한 사용자 ID
      * @return 조회 조건에 맞는 거래 내역
      */
+    @Transactional(readOnly = true)
     public TransactionResponse getTransaction(TransactionQueryRequest request, Long userId) {
         List<Transaction> transactionList = transactionQueryRepository.search(request, userId);
         long totalElements = transactionQueryRepository.searchTotalElements(request, userId);
@@ -137,6 +149,7 @@ public class TransactionService {
      * @param userId  로그인한 사용자 ID
      * @param request 동기화 시작 날짜, 종료 날짜
      */
+    @Transactional
     public void syncTransaction(Long userId, TransactionSyncRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -200,6 +213,13 @@ public class TransactionService {
 
             // 5. 카드별 거래내역 저장
             transactionRepository.saveAll(transactionList);
+        }
+
+        // 6. 카테고리별 카드 내역 통계 캐싱 무효화
+        Set<String> keys = redisTemplate.keys("sumCategoryTransaction:" + userId + ":*");
+
+        if (!keys.isEmpty()) {
+            redisTemplate.delete(keys);
         }
     }
 
