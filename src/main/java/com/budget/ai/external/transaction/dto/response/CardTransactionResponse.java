@@ -38,9 +38,6 @@ public record CardTransactionResponse(
             @Schema(description = "거래 시각", example = "2025-08-18T12:34:56Z")
             OffsetDateTime transactionAt,
 
-            @Schema(description = "거래 유형", example = "PAYMENT")
-            String cardTransactionType,
-
             @Schema(description = "거래 상태", example = "APPROVED")
             String cardTransactionStatus
     ) {
@@ -54,7 +51,6 @@ public record CardTransactionResponse(
                     cardTransaction.getMerchantAddress(),
                     cardTransaction.getTransactionAt()
                             .atOffset(ZoneOffset.UTC),
-                    cardTransaction.getCardTransactionType().name(),
                     cardTransaction.getCardTransactionStatus().name()
             );
         }

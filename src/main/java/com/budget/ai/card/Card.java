@@ -8,10 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-
 /**
  * 카드 엔티티
  */
@@ -43,10 +39,6 @@ public class Card extends BaseTimeEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /** 마지막 동기화 시간 */
-    @Column(name = "synchronized_at")
-    private LocalDateTime synchronizedAt;
-
     @Builder
     public Card(CardCompanyType cardCompanyType, String cardNumber, User user) {
         this.cardCompanyType = cardCompanyType;
@@ -54,7 +46,4 @@ public class Card extends BaseTimeEntity {
         this.user = user;
     }
 
-    public void updateSyncTime(OffsetDateTime syncTime) {
-        this.synchronizedAt = syncTime.withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime();
-    }
 }

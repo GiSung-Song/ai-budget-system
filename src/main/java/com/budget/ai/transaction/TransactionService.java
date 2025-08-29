@@ -9,24 +9,34 @@ import com.budget.ai.category.MerchantCategoryRepository;
 import com.budget.ai.external.openai.OpenAIService;
 import com.budget.ai.response.CustomException;
 import com.budget.ai.response.ErrorCode;
+import com.budget.ai.transaction.dto.SumCategoryTransaction;
 import com.budget.ai.transaction.dto.request.TransactionQueryRequest;
+import com.budget.ai.transaction.dto.request.TransactionSyncRequest;
+import com.budget.ai.transaction.dto.response.CategorySavingResponse;
 import com.budget.ai.transaction.dto.response.ExternalTransactionResponse;
+import com.budget.ai.transaction.dto.response.SumCategoryTransactionResponse;
 import com.budget.ai.transaction.dto.response.TransactionResponse;
 import com.budget.ai.user.User;
 import com.budget.ai.user.UserRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
@@ -43,6 +53,7 @@ public class TransactionService {
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
     private final TransactionQueryRepository transactionQueryRepository;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private final WebClient webClient;
 
@@ -52,6 +63,7 @@ public class TransactionService {
                               MerchantCategoryRepository merchantCategoryRepository,
                               CategoryRepository categoryRepository, TransactionRepository transactionRepository,
                               TransactionQueryRepository transactionQueryRepository,
+                              RedisTemplate<String, Object> redisTemplate,
                               @Qualifier("serviceWebClient") WebClient webClient,
                               OpenAIService openAIService) {
         this.userRepository = userRepository;
@@ -60,8 +72,53 @@ public class TransactionService {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.transactionQueryRepository = transactionQueryRepository;
+        this.redisTemplate = redisTemplate;
         this.webClient = webClient;
         this.openAIService = openAIService;
+    }
+
+    /**
+     * 카테고리별 거래 내역 통계
+     * @param userId    로그인한 사용자 ID
+     * @param startDate 시작 날짜
+     * @param endDate   종료 날짜
+     * @return 카테고리별 거래 내역
+     */
+    @Cacheable(
+            value = "sumCategoryTransaction",
+            key = "#userId + ':' + #startDate.toString() + ':' + #endDate.toString()"
+    )
+    @Transactional(readOnly = true)
+    public SumCategoryTransactionResponse getSumCategoryTransaction(Long userId, LocalDate startDate, LocalDate endDate) {
+        LocalDateTime startTime = startDate.atStartOfDay(); // 00:00:00
+        LocalDateTime endTime = endDate.atTime(LocalTime.MAX); // 23:59:59.999999
+
+        List<SumCategoryTransaction.CategoryInfo> categoryInfoList = transactionQueryRepository.sumCategory(userId, startTime, endTime);
+
+        BigDecimal totalSum = categoryInfoList.stream()
+                .map(SumCategoryTransaction.CategoryInfo::sumAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        List<SumCategoryTransactionResponse.SumCategoryInfo> responseList = categoryInfoList.stream()
+                .map(info -> {
+                    BigDecimal ratio = BigDecimal.ZERO;
+                    if (totalSum.compareTo(BigDecimal.ZERO) > 0) {
+                        ratio = info.sumAmount()
+                                .multiply(BigDecimal.valueOf(100))
+                                .divide(totalSum, 2, RoundingMode.HALF_UP);
+                    }
+                    return new SumCategoryTransactionResponse.SumCategoryInfo(
+                            info.categoryId(),
+                            info.categoryName(),
+                            info.sumAmount(),
+                            info.transactionCount(),
+                            ratio
+                    );
+                })
+                .toList();
+
+        return new SumCategoryTransactionResponse(responseList, totalSum);
     }
 
     /**
@@ -70,6 +127,7 @@ public class TransactionService {
      * @param userId  로그인한 사용자 ID
      * @return 조회 조건에 맞는 거래 내역
      */
+    @Transactional(readOnly = true)
     public TransactionResponse getTransaction(TransactionQueryRequest request, Long userId) {
         List<Transaction> transactionList = transactionQueryRepository.search(request, userId);
         long totalElements = transactionQueryRepository.searchTotalElements(request, userId);
@@ -87,11 +145,12 @@ public class TransactionService {
     }
 
     /**
-     * 최신 거래 내역 동기화
-     * @param userId 로그인한 사용자 ID
-     * @throws CustomException 회원이 없는 경우, 외부 API 호출 시 오류
+     * 거래내역 동기화
+     * @param userId  로그인한 사용자 ID
+     * @param request 동기화 시작 날짜, 종료 날짜
      */
-    public void lastSyncTransaction(Long userId) {
+    @Transactional
+    public void syncTransaction(Long userId, TransactionSyncRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -105,25 +164,28 @@ public class TransactionService {
 
         for (Card card : cardList) {
             // 2. 카드 거래내역 조회
-            // 2-1. 마지막 조회 시간이 없다면 해당 달의 첫날 초기화
-            LocalDateTime utcTime =
-                    card.getSynchronizedAt() != null
-                            ? card.getSynchronizedAt()
-                            : LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1).atStartOfDay();
-            OffsetDateTime startDate = utcTime.atOffset(ZoneOffset.UTC);
+            OffsetDateTime startDate = request.startDate().atStartOfDay().atOffset(ZoneOffset.UTC);
+            OffsetDateTime endDate = request.endDate().plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC);
 
             // 2-2. 카드 거래내역 API 호출
-            ExternalTransactionResponse response = callCardTransactionAPI(card.getCardNumber(), startDate);
+            ExternalTransactionResponse response = callCardTransactionAPI(card.getCardNumber(), startDate, endDate);
 
             // 3. 거래별 카테고리 매핑 및 Transaction 생성
             List<Transaction> transactionList = new ArrayList<>();
 
             for (ExternalTransactionResponse.TransactionInfo info : response.cardTransactionList()) {
+                // 3-1. 이미 저장된 데이터는 pass
+                boolean exists = transactionQueryRepository.existsTransaction(card.getId(), info.merchantId(), info.transactionAt().toLocalDateTime());
+
+                if (exists) {
+                    continue;
+                }
+
                 Optional<MerchantCategory> mcOpt = merchantCategoryRepository.findByMerchantNameLike(info.merchantName());
-                // 3-1. 가맹점에 대한 카테고리가 이미 존재하는 경우 카테고리 지정
+                // 3-2. 가맹점에 대한 카테고리가 이미 존재하는 경우 카테고리 지정
                 Category category = mcOpt.map(MerchantCategory::getCategory)
                         .orElseGet(() -> {
-                            // 3-2. 가맹점에 대한 카테고리가 존재하지 않는 경우 OpenAI API 호출하여 카테고리 지정
+                            // 3-3. 가맹점에 대한 카테고리가 존재하지 않는 경우 OpenAI API 호출하여 카테고리 지정
                             String code = openAIService.chooseCategory(info.merchantName());
 
                             return categoryRepository.findByCode(code)
@@ -143,7 +205,6 @@ public class TransactionService {
                         .transactionAt(info.transactionAt()
                                 .withOffsetSameInstant(ZoneOffset.UTC)
                                 .toLocalDateTime())
-                        .transactionType(TransactionType.valueOf(info.cardTransactionType()))
                         .transactionStatus(TransactionStatus.valueOf(info.cardTransactionStatus()))
                         .build();
 
@@ -153,13 +214,21 @@ public class TransactionService {
             // 5. 카드별 거래내역 저장
             transactionRepository.saveAll(transactionList);
         }
+
+        // 6. 카테고리별 카드 내역 통계 캐싱 무효화
+        Set<String> keys = redisTemplate.keys("sumCategoryTransaction:" + userId + ":*");
+
+        if (!keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
     }
 
-    private ExternalTransactionResponse callCardTransactionAPI(String cardNumber, OffsetDateTime startDate) {
+    private ExternalTransactionResponse callCardTransactionAPI(String cardNumber, OffsetDateTime startDate, OffsetDateTime endDate) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/outer/transaction")
                         .queryParam("startDate", startDate.toString())
+                        .queryParam("endDate", endDate.toString())
                         .queryParam("cardNumber", cardNumber)
                         .build())
                 .retrieve()

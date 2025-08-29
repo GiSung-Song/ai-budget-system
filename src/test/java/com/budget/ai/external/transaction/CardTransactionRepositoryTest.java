@@ -40,7 +40,6 @@ class CardTransactionRepositoryTest {
                         .transactionAt(OffsetDateTime.parse("2025-08-15T13:05:03+09:00")
                                 .withOffsetSameInstant(ZoneOffset.UTC)
                                 .toLocalDateTime())
-                        .cardTransactionType(CardTransactionType.PAYMENT)
                         .cardTransactionStatus(CardTransactionStatus.APPROVED)
                         .build(),
 
@@ -52,7 +51,6 @@ class CardTransactionRepositoryTest {
                         .transactionAt(OffsetDateTime.parse("2025-08-17T23:12:11+09:00")
                                 .withOffsetSameInstant(ZoneOffset.UTC)
                                 .toLocalDateTime())
-                        .cardTransactionType(CardTransactionType.PAYMENT)
                         .cardTransactionStatus(CardTransactionStatus.APPROVED)
                         .build()
                 );
@@ -77,33 +75,33 @@ class CardTransactionRepositoryTest {
     }
 
     @Test
-    void 카드_번호_없음_빈_리스트_반환() {
-        List<CardTransaction> result = cardTransactionRepository.findByCardNumberAndTransactionAtAfter(
-                "00000000", LocalDateTime.of(2025, 8, 14, 0, 0));
+    void 특정_기간의_거래내역_없음() {
+        LocalDateTime startDate = OffsetDateTime.parse("2025-08-10T13:00:00+09:00")
+                .withOffsetSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime();
+
+        LocalDateTime endDate = OffsetDateTime.parse("2025-08-14T13:00:00+09:00")
+                .withOffsetSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime();
+
+        List<CardTransaction> result = cardTransactionRepository.findByCardNumberAndBetweenDate(
+                TEST_CARD_NUMBER, startDate, endDate);
 
         assertThat(result).isEmpty();
     }
 
     @Test
-    void 특정_날짜_이후_거래내역_없음_빈_리스트_반환() {
-        LocalDateTime dateTime = OffsetDateTime.parse("2025-08-20T13:00:00+09:00")
+    void 특정_기간의_거래내역_한건() {
+        LocalDateTime startDate = OffsetDateTime.parse("2025-08-16T13:00:00+09:00")
                 .withOffsetSameInstant(ZoneOffset.UTC)
                 .toLocalDateTime();
 
-        List<CardTransaction> result = cardTransactionRepository.findByCardNumberAndTransactionAtAfter(
-                TEST_CARD_NUMBER, dateTime);
-
-        assertThat(result).isEmpty();
-    }
-
-    @Test
-    void 특정_날짜_이후_거래내역_단건_반환() {
-        LocalDateTime dateTime = OffsetDateTime.parse("2025-08-17T13:00:00+09:00")
+        LocalDateTime endDate = OffsetDateTime.parse("2025-08-18T13:00:00+09:00")
                 .withOffsetSameInstant(ZoneOffset.UTC)
                 .toLocalDateTime();
 
-        List<CardTransaction> result = cardTransactionRepository.findByCardNumberAndTransactionAtAfter(
-                TEST_CARD_NUMBER, dateTime);
+        List<CardTransaction> result = cardTransactionRepository.findByCardNumberAndBetweenDate(
+                TEST_CARD_NUMBER, startDate, endDate);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getMerchantId())
@@ -111,13 +109,17 @@ class CardTransactionRepositoryTest {
     }
 
     @Test
-    void 특정_날짜_이후_거래내역_모두_반환() {
-        LocalDateTime dateTime = OffsetDateTime.parse("2025-08-10T13:00:00+09:00")
+    void 특정_기간의_거래내역_모두() {
+        LocalDateTime startDate = OffsetDateTime.parse("2025-08-14T13:00:00+09:00")
                 .withOffsetSameInstant(ZoneOffset.UTC)
                 .toLocalDateTime();
 
-        List<CardTransaction> result = cardTransactionRepository.findByCardNumberAndTransactionAtAfter(
-                TEST_CARD_NUMBER, dateTime);
+        LocalDateTime endDate = OffsetDateTime.parse("2025-08-18T13:00:00+09:00")
+                .withOffsetSameInstant(ZoneOffset.UTC)
+                .toLocalDateTime();
+
+        List<CardTransaction> result = cardTransactionRepository.findByCardNumberAndBetweenDate(
+                TEST_CARD_NUMBER, startDate, endDate);
 
         assertThat(result).hasSize(2);
     }

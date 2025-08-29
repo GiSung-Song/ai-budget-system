@@ -75,7 +75,6 @@ class CardTransactionControllerTest {
                     "흥부 부대찌개 도봉점",
                     null,
                     OffsetDateTime.parse("2025-07-25T04:18:12+09:00"),
-                    CardTransactionType.PAYMENT.name(),
                     CardTransactionStatus.APPROVED.name()
             );
 
@@ -108,7 +107,6 @@ class CardTransactionControllerTest {
                     "흥부 부대찌개 도봉점",
                     null,
                     OffsetDateTime.parse("2025-07-25T04:18:12+09:00"),
-                    CardTransactionType.PAYMENT.name(),
                     CardTransactionStatus.APPROVED.name()
             );
 
@@ -130,7 +128,6 @@ class CardTransactionControllerTest {
                     "흥부 부대찌개 도봉점",
                     null,
                     OffsetDateTime.parse("2025-07-25T04:18:12+09:00"),
-                    CardTransactionType.PAYMENT.name(),
                     CardTransactionStatus.APPROVED.name()
             );
 
@@ -149,7 +146,6 @@ class CardTransactionControllerTest {
                     "50000.00",
                     "맥도날드 방학점",
                     "2025-08-15T03:22:32+09:00",
-                    CardTransactionType.PAYMENT,
                     CardTransactionStatus.APPROVED
             );
 
@@ -162,7 +158,6 @@ class CardTransactionControllerTest {
                     "흥부 부대찌개 도봉점",
                     null,
                     OffsetDateTime.parse("2025-07-25T04:18:12+09:00"),
-                    CardTransactionType.PAYMENT.name(),
                     CardTransactionStatus.APPROVED.name()
             );
 
@@ -189,7 +184,6 @@ class CardTransactionControllerTest {
                     "13500.00",
                     "KFC 방학점",
                     "2025-08-10T05:10:15+09:00",
-                    CardTransactionType.PAYMENT,
                     CardTransactionStatus.APPROVED
             );
 
@@ -199,7 +193,6 @@ class CardTransactionControllerTest {
                     "29000.00",
                     "롯데리아 방학점",
                     "2025-08-12T21:20:58+09:00",
-                    CardTransactionType.PAYMENT,
                     CardTransactionStatus.APPROVED
             );
 
@@ -209,7 +202,6 @@ class CardTransactionControllerTest {
                     "38050.00",
                     "맥도날드 방학점",
                     "2025-08-14T15:38:04+09:00",
-                    CardTransactionType.PAYMENT,
                     CardTransactionStatus.APPROVED
             );
         }
@@ -218,6 +210,7 @@ class CardTransactionControllerTest {
         void 카드_거래내역_없음() throws Exception {
             mockMvc.perform(get("/outer/transaction")
                             .param("startDate", "2025-08-16T05:10:15+09:00")
+                            .param("endDate", "2025-08-20T05:10:15+09:00")
                             .param("cardNumber", "123412341234"))
                     .andDo(print())
                     .andExpect(status().isOk())
@@ -228,6 +221,7 @@ class CardTransactionControllerTest {
         void 카드_거래내역_목록_조회() throws Exception {
             MvcResult mvcResult = mockMvc.perform(get("/outer/transaction")
                             .param("startDate", "2025-08-01T05:10:15+09:00")
+                            .param("endDate", "2025-08-20T05:10:15+09:00")
                             .param("cardNumber", "123412341234"))
                     .andDo(print())
                     .andExpect(status().isOk())

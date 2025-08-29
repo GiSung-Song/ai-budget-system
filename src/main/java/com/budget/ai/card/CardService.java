@@ -8,6 +8,7 @@ import com.budget.ai.user.User;
 import com.budget.ai.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,7 @@ public class CardService {
      * @param request 카드 등록 요청 DTO
      * @throws CustomException 회원이 없거나, 이미 등록된 카드인 경우
      */
+    @Transactional
     public void registerCard(Long userId, RegisterCardRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -56,6 +58,7 @@ public class CardService {
      * @param cardId 카드 ID
      * @throws CustomException 해당 카드가 없는 경우
      */
+    @Transactional
     public void deleteCard(Long userId, Long cardId) {
         Card card = cardRepository.findByIdAndUserId(cardId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CARD_NOT_FOUND));
@@ -68,6 +71,7 @@ public class CardService {
      * @param userId 로그인한 사용자 ID
      * @return 카드 목록
      */
+    @Transactional(readOnly = true)
     public CardInfoResponse getMyCardInfo(Long userId) {
         List<Card> cardList = Optional.ofNullable(
                 cardRepository.findAllByUserId(userId)
