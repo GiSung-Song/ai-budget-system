@@ -25,6 +25,7 @@ import java.time.ZoneOffset;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @Testcontainers
@@ -155,10 +156,19 @@ public class TransactionE2ETest {
                 .body("data.sumCategoryInfoList[1].categoryName", equalTo("마트"))
                 .body("data.sumCategoryInfoList[2].categoryName", equalTo("문화"))
                 .body("data.sumCategoryInfoList[3].categoryName", equalTo("음식점"))
+                .body("data.sumCategoryInfoList[4].categoryName", equalTo("카페"))
                 .extract().jsonPath().getFloat("data.totalSum");
 
         BigDecimal actual = new BigDecimal(Float.toString(totalSumFloat));
         BigDecimal expected = new BigDecimal("351500.0");
+
+        // 7. 거래내역 통계로 절약 방법 조회
+        given().log().all()
+                .header("Authorization", "Bearer " + accessToken)
+                .when().get(baseUrl() + "/api/transaction/recommend-saving?startDate=2025-07-01&endDate=2025-12-12")
+                .then().log().all()
+                .statusCode(200)
+                .body("data.savingInfoList", notNullValue());
 
         Assertions.assertThat(actual).isEqualTo(expected);
     }
