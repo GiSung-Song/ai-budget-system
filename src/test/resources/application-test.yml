@@ -5,7 +5,7 @@ spring:
 
   batch:
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
 
 jwt:
   secretKey: gisung-project-ai-budget-jwt-secret-key-is-mine
