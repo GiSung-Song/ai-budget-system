@@ -1,13 +1,12 @@
 package com.budget.ai.transaction;
 
 import com.budget.ai.card.QCard;
-import com.budget.ai.transaction.dto.request.TransactionQueryRequest;
 import com.budget.ai.transaction.dto.SumCategoryTransaction;
+import com.budget.ai.transaction.dto.TransactionReportDTO;
+import com.budget.ai.transaction.dto.request.TransactionQueryRequest;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.core.types.dsl.*;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -17,7 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.budget.ai.category.QCategory.*;
+import static com.budget.ai.category.QCategory.category;
 import static com.budget.ai.transaction.QTransaction.transaction;
 
 @RequiredArgsConstructor
@@ -25,18 +24,33 @@ import static com.budget.ai.transaction.QTransaction.transaction;
 public class TransactionQueryRepository {
     private final JPAQueryFactory jpaQueryFactory;
 
-    public List<SumCategoryTransaction.CategoryInfo> sumCategory(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
-
+    public List<TransactionReportDTO> getTransactionCategorySum(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
         // 순 지출 금액 (승인 + 취소 상쇄)
-        NumberExpression<BigDecimal> netAmount = new CaseBuilder()
-                .when(transaction.transactionStatus.eq(TransactionStatus.APPROVED))
-                .then(transaction.amount)
-                .when(transaction.transactionStatus.eq(TransactionStatus.CANCELED)
-                        .and(transaction.originalMerchantId.isNotNull()))
-                .then(transaction.amount.negate())
-                .otherwise(BigDecimal.ZERO);
+        NumberExpression<BigDecimal> netAmountSum = netAmountExpression(transaction);
 
-        NumberExpression<BigDecimal> netAmountSum = netAmount.sum();
+        StringTemplate yearMonth = Expressions.stringTemplate(
+                "DATE_FORMAT({0}, '%Y-%m')", transaction.transactionAt
+        );
+
+        return jpaQueryFactory
+                .select(Projections.constructor(
+                        TransactionReportDTO.class,
+                        transaction.category.displayName,
+                        netAmountSum,
+                        yearMonth
+                ))
+                .from(transaction)
+                .join(transaction.category, category)
+                .where(transaction.transactionAt.between(startDate, endDate))
+                .where(transaction.user.id.eq(userId))
+                .groupBy(transaction.category.displayName, yearMonth)
+                .having(netAmountSum.gt(BigDecimal.ZERO))
+                .fetch();
+    }
+
+    public List<SumCategoryTransaction.CategoryInfo> sumCategory(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
+        // 순 지출 금액 (승인 + 취소 상쇄)
+        NumberExpression<BigDecimal> netAmountSum = netAmountExpression(transaction);
 
         // 카테고리별 합계 + 거래 수 조회
         return jpaQueryFactory
@@ -106,6 +120,19 @@ public class TransactionQueryRepository {
                 .limit(request.size())
                 .orderBy(orderBy(request.sortOrder()))
                 .fetch();
+    }
+
+    private NumberExpression<BigDecimal> netAmountExpression(QTransaction transaction) {
+        // 순 지출 금액 (승인 + 취소 상쇄)
+        NumberExpression<BigDecimal> netAmount = new CaseBuilder()
+                .when(transaction.transactionStatus.eq(TransactionStatus.APPROVED))
+                .then(transaction.amount)
+                .when(transaction.transactionStatus.eq(TransactionStatus.CANCELED)
+                        .and(transaction.originalMerchantId.isNotNull()))
+                .then(transaction.amount.negate())
+                .otherwise(BigDecimal.ZERO);
+
+        return netAmount.sum();
     }
 
     private BooleanExpression cardEq(Long cardId) {
