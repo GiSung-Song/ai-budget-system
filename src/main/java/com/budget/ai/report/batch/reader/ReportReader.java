@@ -1,6 +1,6 @@
 package com.budget.ai.report.batch.reader;
 
-import com.budget.ai.report.dto.UserReportInput;
+import com.budget.ai.report.batch.dto.UserReportInput;
 import com.budget.ai.transaction.TransactionQueryRepository;
 import com.budget.ai.transaction.dto.TransactionReportDTO;
 import com.budget.ai.user.UserQueryRepository;

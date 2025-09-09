@@ -42,6 +42,12 @@ public enum ErrorCode {
 
     // JSON 변환 오류
     CONVERT_JSON_PARSING("CONVERT_JSON_PARSING", "JSON 파싱 중 오류가 발생하였습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    // 리포트
+    REPORT_NOT_FOUND("REPORT_NOT_FOUND", "등록되지 않은 리포트입니다.", HttpStatus.NOT_FOUND),
+
+    // 배치
+    BATCH_RUN_ERROR("BATCH_RUN_ERROR", "배치 실행 중 오류가 발생하였습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
     ;
 
     private final String code;

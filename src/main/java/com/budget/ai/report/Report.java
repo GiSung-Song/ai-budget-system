@@ -31,8 +31,4 @@ public class Report {
 
     @Column(name = "notification_message", nullable = false, columnDefinition = "TEXT")
     private String notificationMessage;
-
-    @Builder.Default
-    @Column(name = "is_read", nullable = false)
-    private Boolean isRead = false;
 }

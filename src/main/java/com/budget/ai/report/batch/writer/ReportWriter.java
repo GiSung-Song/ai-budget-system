@@ -2,7 +2,7 @@ package com.budget.ai.report.batch.writer;
 
 import com.budget.ai.report.Report;
 import com.budget.ai.report.ReportRepository;
-import com.budget.ai.report.dto.CategoryComparisonResult;
+import com.budget.ai.report.batch.dto.CategoryComparisonResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;

@@ -1,17 +1,24 @@
-package com.budget.ai.transaction;
+package com.budget.ai.e2e;
 
 import com.budget.ai.auth.dto.request.LoginRequest;
 import com.budget.ai.card.dto.request.RegisterCardRequest;
 import com.budget.ai.external.transaction.dto.request.AddCardTransactionRequest;
+import com.budget.ai.transaction.TransactionService;
 import com.budget.ai.transaction.dto.request.TransactionSyncRequest;
 import com.budget.ai.user.dto.request.RegisterRequest;
+import io.restassured.RestAssured;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -27,9 +34,19 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TransactionE2ETest {
+
+    @LocalServerPort
+    private int port;
+
+    @Autowired
+    private WebClient.Builder webClientBuilder;
+
+    @Autowired
+    private TransactionService transactionService;
 
     static MySQLContainer<?> E2E_MYSQL = new MySQLContainer<>("mysql:8.0")
             .withDatabaseName("e2edb")
@@ -38,11 +55,6 @@ public class TransactionE2ETest {
 
     static GenericContainer<?> E2E_REDIS = new GenericContainer<>(DockerImageName.parse("redis:latest"))
             .withExposedPorts(6379);
-
-    static {
-        E2E_MYSQL.start();
-        E2E_REDIS.start();
-    }
 
     @DynamicPropertySource
     static void registerMySQL(DynamicPropertyRegistry registry) {
@@ -55,21 +67,31 @@ public class TransactionE2ETest {
         registry.add("spring.data.redis.port", () -> E2E_REDIS.getMappedPort(6379));
     }
 
-    @LocalServerPort
-    int port;
+    static {
+        E2E_MYSQL.start();
+        E2E_REDIS.start();
+    }
 
-    private String baseUrl() {
-        return "http://localhost:" + port;
+    @BeforeEach
+    void setUp() {
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = port;
+
+        WebClient testServiceWebClient = webClientBuilder
+                .baseUrl("http://localhost:" + port)
+                .build();
+
+        ReflectionTestUtils.setField(transactionService, "webClient", testServiceWebClient);
     }
 
     @AfterAll
-    static void cleanUp() {
+    static void stop() {
         E2E_MYSQL.stop();
         E2E_REDIS.stop();
     }
 
     @Test
-    void TRANSACTION_E2E_테스트() {
+    void Transaction_E2E_Test() {
         // 1. 회원가입
         RegisterRequest registerRequest = new RegisterRequest("tester@email.com", "rawPassword", "테스터");
 
@@ -77,7 +99,7 @@ public class TransactionE2ETest {
                 .log().all()
                 .contentType("application/json")
                 .body(registerRequest)
-                .when().post(baseUrl() + "/api/users")
+                .when().post("/api/users")
                 .then().log().all().statusCode(201);
 
         // 2. 로그인 + 토큰 획득
@@ -87,7 +109,7 @@ public class TransactionE2ETest {
                 .log().all()
                 .contentType("application/json")
                 .body(loginRequest)
-                .when().post(baseUrl() + "/api/auth/login")
+                .when().post("/api/auth/login")
                 .then().log().all().statusCode(200)
                 .extract()
                 .jsonPath()
@@ -100,7 +122,7 @@ public class TransactionE2ETest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .body(registerCardRequest)
-                .when().post(baseUrl() + "/api/cards")
+                .when().post("/api/cards")
                 .then().log().all().statusCode(201);
 
         // 3-1. 두 번째 카드 등록
@@ -110,7 +132,7 @@ public class TransactionE2ETest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .body(registerCardRequest2)
-                .when().post(baseUrl() + "/api/cards")
+                .when().post("/api/cards")
                 .then().log().all().statusCode(201);
 
         // 카드 거래내역 데이터 삽입 (가짜 데이터 테스트용)
@@ -124,7 +146,7 @@ public class TransactionE2ETest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .body(transactionSyncRequest)
-                .when().post(baseUrl() + "/api/transaction/sync")
+                .when().post("/api/transaction/sync")
                 .then().log().all().statusCode(200);
 
         // 4-1. 거래내역 동기화 2번째 중복된 데이터 조회 시 중복저장 하지 않는지 체크하기 위한 테스트(API 호출 X)
@@ -135,13 +157,13 @@ public class TransactionE2ETest {
                 .header("Authorization", "Bearer " + accessToken)
                 .contentType("application/json")
                 .body(transactionSyncRequest2)
-                .when().post(baseUrl() + "/api/transaction/sync")
+                .when().post("/api/transaction/sync")
                 .then().log().all().statusCode(200);
 
         // 5. 거래내역 조회
         given().log().all()
                 .header("Authorization", "Bearer " + accessToken)
-                .when().get(baseUrl() + "/api/transaction?page=0&size=10&startDate=2025-07-01&endDate=2025-08-30")
+                .when().get("/api/transaction?page=0&size=10&startDate=2025-07-01&endDate=2025-08-30")
                 .then().log().all()
                 .statusCode(200)
                 .body("data.transactionList.size()", equalTo(6));
@@ -149,7 +171,7 @@ public class TransactionE2ETest {
         // 6. 거래내역 통계 조회
         float totalSumFloat = given().log().all()
                 .header("Authorization", "Bearer " + accessToken)
-                .when().get(baseUrl() + "/api/transaction/summary?startDate=2025-07-01&endDate=2025-12-12")
+                .when().get("/api/transaction/summary?startDate=2025-07-01&endDate=2025-12-12")
                 .then().log().all()
                 .statusCode(200)
                 .body("data.sumCategoryInfoList[0].categoryName", equalTo("교통"))
@@ -162,15 +184,15 @@ public class TransactionE2ETest {
         BigDecimal actual = new BigDecimal(Float.toString(totalSumFloat));
         BigDecimal expected = new BigDecimal("351500.0");
 
+        Assertions.assertThat(actual).isEqualTo(expected);
+
         // 7. 거래내역 통계로 절약 방법 조회
         given().log().all()
                 .header("Authorization", "Bearer " + accessToken)
-                .when().get(baseUrl() + "/api/transaction/recommend-saving?startDate=2025-07-01&endDate=2025-12-12")
+                .when().get("/api/transaction/recommend-saving?startDate=2025-07-01&endDate=2025-12-12")
                 .then().log().all()
                 .statusCode(200)
                 .body("data.savingInfoList", notNullValue());
-
-        Assertions.assertThat(actual).isEqualTo(expected);
     }
 
     private void addCardTransactionData() {
@@ -206,32 +228,32 @@ public class TransactionE2ETest {
 
         given().contentType("application/json")
                 .body(cardTransaction1)
-                .when().post(baseUrl() + "/outer/transaction")
+                .when().post("/outer/transaction")
                 .then().statusCode(201);
 
         given().contentType("application/json")
                 .body(cardTransaction2)
-                .when().post(baseUrl() + "/outer/transaction")
+                .when().post("/outer/transaction")
                 .then().statusCode(201);
 
         given().contentType("application/json")
                 .body(cardTransaction3)
-                .when().post(baseUrl() + "/outer/transaction")
+                .when().post("/outer/transaction")
                 .then().statusCode(201);
 
         given().contentType("application/json")
                 .body(cardTransaction4)
-                .when().post(baseUrl() + "/outer/transaction")
+                .when().post("/outer/transaction")
                 .then().statusCode(201);
 
         given().contentType("application/json")
                 .body(cardTransaction5)
-                .when().post(baseUrl() + "/outer/transaction")
+                .when().post("/outer/transaction")
                 .then().statusCode(201);
 
         given().contentType("application/json")
                 .body(cardTransaction6)
-                .when().post(baseUrl() + "/outer/transaction")
+                .when().post("/outer/transaction")
                 .then().statusCode(201);
     }
 }
