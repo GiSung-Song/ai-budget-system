@@ -21,8 +21,6 @@ public class QReport extends EntityPathBase<Report> {
 
     public final NumberPath<Long> id = createNumber("id", Long.class);
 
-    public final BooleanPath isRead = createBoolean("isRead");
-
     public final StringPath notificationMessage = createString("notificationMessage");
 
     public final StringPath reportMessage = createString("reportMessage");

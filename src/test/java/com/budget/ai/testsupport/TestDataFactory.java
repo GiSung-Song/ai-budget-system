@@ -6,6 +6,8 @@ import com.budget.ai.card.CardRepository;
 import com.budget.ai.external.transaction.CardTransaction;
 import com.budget.ai.external.transaction.CardTransactionRepository;
 import com.budget.ai.external.transaction.CardTransactionStatus;
+import com.budget.ai.report.Report;
+import com.budget.ai.report.ReportRepository;
 import com.budget.ai.user.User;
 import com.budget.ai.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
@@ -29,6 +32,9 @@ public class TestDataFactory {
 
     @Autowired
     private CardTransactionRepository cardTransactionRepository;
+
+    @Autowired
+    private ReportRepository reportRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -67,5 +73,16 @@ public class TestDataFactory {
                 .build();
 
         return cardTransactionRepository.save(cardTransaction);
+    }
+
+    public Report createReport(Long userId, LocalDate yearMonth, String notificationMessage, String reportMessage) {
+        Report report = Report.builder()
+                .userId(userId)
+                .reportMonth(yearMonth)
+                .notificationMessage(notificationMessage)
+                .reportMessage(reportMessage)
+                .build();
+
+        return reportRepository.save(report);
     }
 }

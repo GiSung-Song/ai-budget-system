@@ -1,4 +1,4 @@
-package com.budget.ai.report.dto;
+package com.budget.ai.report.batch.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
