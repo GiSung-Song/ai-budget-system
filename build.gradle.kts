@@ -54,6 +54,7 @@ dependencies {
 	// AOP
 	implementation("org.springframework.boot:spring-boot-starter-aop")
 
+	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 	implementation("me.paulschwarz:spring-dotenv:3.0.0")
 
 	// QueryDSL

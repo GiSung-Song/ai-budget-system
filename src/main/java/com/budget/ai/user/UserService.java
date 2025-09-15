@@ -1,5 +1,9 @@
 package com.budget.ai.user;
 
+import com.budget.ai.logging.AuditLogUtil;
+import com.budget.ai.logging.aop.AuditLEntityId;
+import com.budget.ai.logging.aop.AuditLog;
+import com.budget.ai.logging.aop.OperationLog;
 import com.budget.ai.response.CustomException;
 import com.budget.ai.response.ErrorCode;
 import com.budget.ai.user.dto.request.CancelDeleteRequest;
@@ -28,18 +32,43 @@ public class UserService {
      * @param request 회원가입 요청 DTO (이메일, 이름, 비밀번호)
      */
     @Transactional
+    @OperationLog(eventName = "회원가입")
     public void register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new CustomException(ErrorCode.USER_EMAIL_ALREADY_EXISTS);
+        User savedUser = null;
+        boolean success = false;
+        String message = null;
+
+        try {
+            if (userRepository.existsByEmail(request.email())) {
+                throw new CustomException(ErrorCode.USER_EMAIL_ALREADY_EXISTS);
+            }
+
+            User user = User.builder()
+                    .email(request.email())
+                    .name(request.name())
+                    .password(passwordEncoder.encode(request.password()))
+                    .build();
+
+            savedUser = userRepository.save(user);
+
+            success = true;
+            message = "회원가입 완료";
+        } catch (CustomException exception) {
+            message = "ErrorCode: " + exception.getErrorCode().getCode() + ", Message: " + exception.getErrorCode().getMessage();
+            throw exception;
+        } finally {
+            AuditLogUtil.logAudit(
+                    this,
+                    new Object[]{request},
+                    "회원가입",
+                    "register",
+                    "INSERT",
+                    "users",
+                    savedUser != null ? String.valueOf(savedUser.getId()) : null,
+                    message,
+                    success
+            );
         }
-
-        User user = User.builder()
-                .email(request.email())
-                .name(request.name())
-                .password(passwordEncoder.encode(request.password()))
-                .build();
-
-        userRepository.save(user);
     }
 
     /**
@@ -61,7 +90,9 @@ public class UserService {
      * @param request 비밀번호 변경 요청 DTO (현재 비밀번호, 새로운 비밀번호)
      */
     @Transactional
-    public void updatePassword(Long userId, PasswordUpdateRequest request) {
+    @AuditLog(eventName = "비밀번호 변경", operationType = "UPDATE", entity = "users")
+    @OperationLog(eventName = "비밀번호 변경")
+    public void updatePassword(@AuditLEntityId Long userId, PasswordUpdateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -81,7 +112,9 @@ public class UserService {
      * @param userId 회원 식별자 ID
      */
     @Transactional
-    public void deleteUser(Long userId) {
+    @AuditLog(eventName = "회원 탈퇴", operationType = "UPDATE", entity = "users")
+    @OperationLog(eventName = "회원 탈퇴")
+    public void deleteUser(@AuditLEntityId Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -97,10 +130,36 @@ public class UserService {
      * @param request 회원 탈퇴 취소 요청 DTO (이름, 이메일)
      */
     @Transactional
+    @OperationLog(eventName = "회원 탈퇴 취소")
     public void cancelDeleteUser(CancelDeleteRequest request) {
-        User user = userRepository.findByNameAndEmailAndDeletedAtIsNotNull(request.name(), request.email())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = null;
+        boolean success = false;
+        String message = null;
 
-        user.cancelSoftDelete();
+        try {
+            user = userRepository.findByNameAndEmailAndDeletedAtIsNotNull(request.name(), request.email())
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+            user.cancelSoftDelete();
+
+            success = true;
+            message = "회원 탈퇴 취소 완료";
+        } catch (CustomException exception) {
+            message = "ErrorCode: " + exception.getErrorCode().getCode() + ", Message: " + exception.getErrorCode().getMessage();
+
+            throw exception;
+        } finally {
+            AuditLogUtil.logAudit(
+                    this,
+                    new Object[]{request},
+                    "회원 탈퇴 취소",
+                    "cancelDeleteUser",
+                    "UPDATE",
+                    "users",
+                    user != null ? String.valueOf(user.getId()) : null,
+                    message,
+                    success
+            );
+        }
     }
 }

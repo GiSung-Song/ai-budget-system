@@ -1,8 +1,13 @@
 package com.budget.ai.config;
 
+import com.budget.ai.auth.JwtAuthenticationFilter;
+import com.budget.ai.auth.JwtTokenProvider;
+import com.budget.ai.auth.RequestTraceFilter;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -15,17 +20,27 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.budget.ai.auth.JwtAuthenticationFilter;
-
-import jakarta.servlet.http.HttpServletResponse;
-
 /**
  * Spring Security 설정
  */
 @Configuration
+@RequiredArgsConstructor
 @EnableWebSecurity
 public class SecurityConfig {
-    
+
+    private final RedisTemplate<String, String> redisTemplate;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
+        return new JwtAuthenticationFilter(redisTemplate, jwtTokenProvider);
+    }
+
+    @Bean
+    public RequestTraceFilter requestTraceFilter() {
+        return new RequestTraceFilter();
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -45,7 +60,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationFilter jwtAuthenticationFilter,
+                                           RequestTraceFilter requestTraceFilter) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -82,10 +99,10 @@ public class SecurityConfig {
                             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
                         })
                 )
+                .addFilterBefore(requestTraceFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .httpBasic(httpBasic -> httpBasic.disable());
 
         return http.build();
     }
-
 }

@@ -2,7 +2,7 @@ package com.budget.ai.transaction;
 
 import com.budget.ai.card.QCard;
 import com.budget.ai.transaction.dto.SumCategoryTransaction;
-import com.budget.ai.transaction.dto.TransactionReportDTO;
+import com.budget.ai.transaction.dto.TransactionReportDto;
 import com.budget.ai.transaction.dto.request.TransactionQueryRequest;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
@@ -24,7 +24,7 @@ import static com.budget.ai.transaction.QTransaction.transaction;
 public class TransactionQueryRepository {
     private final JPAQueryFactory jpaQueryFactory;
 
-    public List<TransactionReportDTO> getTransactionCategorySum(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
+    public List<TransactionReportDto> getTransactionCategorySum(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
         // 순 지출 금액 (승인 + 취소 상쇄)
         NumberExpression<BigDecimal> netAmountSum = netAmountExpression(transaction);
 
@@ -34,7 +34,7 @@ public class TransactionQueryRepository {
 
         return jpaQueryFactory
                 .select(Projections.constructor(
-                        TransactionReportDTO.class,
+                        TransactionReportDto.class,
                         transaction.category.displayName,
                         netAmountSum,
                         yearMonth

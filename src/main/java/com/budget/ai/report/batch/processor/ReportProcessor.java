@@ -2,7 +2,7 @@ package com.budget.ai.report.batch.processor;
 
 import com.budget.ai.report.batch.dto.CategoryComparisonResult;
 import com.budget.ai.report.batch.dto.UserReportInput;
-import com.budget.ai.transaction.dto.TransactionReportDTO;
+import com.budget.ai.transaction.dto.TransactionReportDto;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +21,7 @@ public class ReportProcessor implements ItemProcessor<UserReportInput, CategoryC
 
     @Override
     public CategoryComparisonResult process(UserReportInput item) throws Exception {
-        List<TransactionReportDTO> transactions = item.transactions();
+        List<TransactionReportDto> transactions = item.transactions();
 
         YearMonth prevMonth = getPrevMonth();
         YearMonth prevPrevMonth = getPrevPrevMonth();
@@ -29,7 +29,7 @@ public class ReportProcessor implements ItemProcessor<UserReportInput, CategoryC
         Map<String, BigDecimal> prevMonthTr = new HashMap<>();
         Map<String, BigDecimal> prevPrevMonthTr = new HashMap<>();
 
-        for (TransactionReportDTO tr : transactions) {
+        for (TransactionReportDto tr : transactions) {
             YearMonth trYm = YearMonth.parse(tr.month(), YM_FORMATTER);
 
             if (trYm.equals(prevMonth)) {

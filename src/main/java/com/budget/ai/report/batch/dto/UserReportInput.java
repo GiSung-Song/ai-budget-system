@@ -1,6 +1,6 @@
 package com.budget.ai.report.batch.dto;
 
-import com.budget.ai.transaction.dto.TransactionReportDTO;
+import com.budget.ai.transaction.dto.TransactionReportDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -14,6 +14,6 @@ public record UserReportInput(
         Long userId,
 
         @Schema(description = "거래내역")
-        List<TransactionReportDTO> transactions
+        List<TransactionReportDto> transactions
 ) {
 }

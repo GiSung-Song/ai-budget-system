@@ -7,6 +7,9 @@ import com.budget.ai.category.CategoryRepository;
 import com.budget.ai.category.MerchantCategory;
 import com.budget.ai.category.MerchantCategoryRepository;
 import com.budget.ai.external.openai.OpenAIService;
+import com.budget.ai.logging.AuditLogUtil;
+import com.budget.ai.logging.aop.AuditLog;
+import com.budget.ai.logging.aop.OperationLog;
 import com.budget.ai.response.CustomException;
 import com.budget.ai.response.ErrorCode;
 import com.budget.ai.transaction.dto.SumCategoryTransaction;
@@ -85,6 +88,7 @@ public class TransactionService {
             key = "#userId + ':' + #startDate.toString() + ':' + #endDate.toString()"
     )
     @Transactional(readOnly = true)
+    @OperationLog(eventName = "카테고리별 거래 내역 통계 조회")
     public SumCategoryTransactionResponse getSumCategoryTransaction(Long userId, LocalDate startDate, LocalDate endDate) {
         LocalDateTime startTime = startDate.atStartOfDay(); // 00:00:00
         LocalDateTime endTime = endDate.atTime(LocalTime.MAX); // 23:59:59.999999
@@ -124,6 +128,7 @@ public class TransactionService {
      * @return 조회 조건에 맞는 거래 내역
      */
     @Transactional(readOnly = true)
+    @OperationLog(eventName = "거래 내역 조회")
     public TransactionResponse getTransaction(TransactionQueryRequest request, Long userId) {
         List<Transaction> transactionList = transactionQueryRepository.search(request, userId);
         long totalElements = transactionQueryRepository.searchTotalElements(request, userId);
@@ -146,77 +151,103 @@ public class TransactionService {
      * @param request 동기화 시작 날짜, 종료 날짜
      */
     @Transactional
+    @OperationLog(eventName = "거래 내역 동기화")
     public void syncTransaction(Long userId, TransactionSyncRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        boolean success = false;
+        String message = null;
 
-        // 1. 보유한 카드 목록 조회
-        List<Card> cardList = cardRepository.findAllByUserId(userId);
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 1-1. 카드 목록이 없으면 return
-        if (cardList.isEmpty()) {
-            return;
-        }
+            // 1. 보유한 카드 목록 조회
+            List<Card> cardList = cardRepository.findAllByUserId(userId);
 
-        for (Card card : cardList) {
-            // 2. 카드 거래내역 조회
-            OffsetDateTime startDate = request.startDate().atStartOfDay().atOffset(ZoneOffset.UTC);
-            OffsetDateTime endDate = request.endDate().plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC);
-
-            // 2-2. 카드 거래내역 API 호출
-            ExternalTransactionResponse response = callCardTransactionAPI(card.getCardNumber(), startDate, endDate);
-
-            // 3. 거래별 카테고리 매핑 및 Transaction 생성
-            List<Transaction> transactionList = new ArrayList<>();
-
-            for (ExternalTransactionResponse.TransactionInfo info : response.cardTransactionList()) {
-                // 3-1. 이미 저장된 데이터는 pass
-                boolean exists = transactionQueryRepository.existsTransaction(card.getId(), info.merchantId(), info.transactionAt().toLocalDateTime());
-
-                if (exists) {
-                    continue;
-                }
-
-                Optional<MerchantCategory> mcOpt = merchantCategoryRepository.findByMerchantNameLike(info.merchantName());
-                // 3-2. 가맹점에 대한 카테고리가 이미 존재하는 경우 카테고리 지정
-                Category category = mcOpt.map(MerchantCategory::getCategory)
-                        .orElseGet(() -> {
-                            // 3-3. 가맹점에 대한 카테고리가 존재하지 않는 경우 OpenAI API 호출하여 카테고리 지정
-                            String code = openAIService.chooseCategory(info.merchantName());
-
-                            return categoryRepository.findByCode(code)
-                                    .orElseThrow(() -> new CustomException(ErrorCode.API_CALL_WRONG_ANSWER));
-                        });
-
-                // 4. 거래내역 생성
-                Transaction transaction = Transaction.builder()
-                        .user(user)
-                        .card(card)
-                        .category(category)
-                        .merchantId(info.merchantId())
-                        .originalMerchantId(info.originalMerchantId())
-                        .amount(info.amount())
-                        .merchantName(info.merchantName())
-                        .merchantAddress(info.merchantAddress())
-                        .transactionAt(info.transactionAt()
-                                .withOffsetSameInstant(ZoneOffset.UTC)
-                                .toLocalDateTime())
-                        .transactionStatus(TransactionStatus.valueOf(info.cardTransactionStatus()))
-                        .build();
-
-                transactionList.add(transaction);
+            // 1-1. 카드 목록이 없으면 return
+            if (cardList.isEmpty()) {
+                return;
             }
 
-            // 5. 카드별 거래내역 저장
-            transactionRepository.saveAll(transactionList);
+            for (Card card : cardList) {
+                // 2. 카드 거래내역 조회
+                OffsetDateTime startDate = request.startDate().atStartOfDay().atOffset(ZoneOffset.UTC);
+                OffsetDateTime endDate = request.endDate().plusDays(1).atStartOfDay().atOffset(ZoneOffset.UTC);
+
+                // 2-2. 카드 거래내역 API 호출
+                ExternalTransactionResponse response = callCardTransactionAPI(card.getCardNumber(), startDate, endDate);
+
+                // 3. 거래별 카테고리 매핑 및 Transaction 생성
+                List<Transaction> transactionList = new ArrayList<>();
+
+                for (ExternalTransactionResponse.TransactionInfo info : response.cardTransactionList()) {
+                    // 3-1. 이미 저장된 데이터는 pass
+                    boolean exists = transactionQueryRepository.existsTransaction(card.getId(), info.merchantId(), info.transactionAt().toLocalDateTime());
+
+                    if (exists) {
+                        continue;
+                    }
+
+                    Optional<MerchantCategory> mcOpt = merchantCategoryRepository.findByMerchantNameLike(info.merchantName());
+                    // 3-2. 가맹점에 대한 카테고리가 이미 존재하는 경우 카테고리 지정
+                    Category category = mcOpt.map(MerchantCategory::getCategory)
+                            .orElseGet(() -> {
+                                // 3-3. 가맹점에 대한 카테고리가 존재하지 않는 경우 OpenAI API 호출하여 카테고리 지정
+                                String code = openAIService.chooseCategory(info.merchantName());
+
+                                return categoryRepository.findByCode(code)
+                                        .orElseThrow(() -> new CustomException(ErrorCode.API_CALL_WRONG_ANSWER));
+                            });
+
+                    // 4. 거래내역 생성
+                    Transaction transaction = Transaction.builder()
+                            .user(user)
+                            .card(card)
+                            .category(category)
+                            .merchantId(info.merchantId())
+                            .originalMerchantId(info.originalMerchantId())
+                            .amount(info.amount())
+                            .merchantName(info.merchantName())
+                            .merchantAddress(info.merchantAddress())
+                            .transactionAt(info.transactionAt()
+                                    .withOffsetSameInstant(ZoneOffset.UTC)
+                                    .toLocalDateTime())
+                            .transactionStatus(TransactionStatus.valueOf(info.cardTransactionStatus()))
+                            .build();
+
+                    transactionList.add(transaction);
+                }
+
+                // 5. 카드별 거래내역 저장
+                transactionRepository.saveAll(transactionList);
+            }
+
+            // 6. 카테고리별 카드 내역 통계 캐싱 무효화
+            Set<String> keys = redisTemplate.keys("sumCategoryTransaction:" + userId + ":*");
+
+            if (!keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+
+            success = true;
+            message = "거래 내역 동기화 완료";
+        } catch (CustomException exception) {
+            message = "ErrorCode: " + exception.getErrorCode().getCode() + ", Message: " + exception.getErrorCode().getMessage();
+
+            throw exception;
+        } finally {
+            AuditLogUtil.logAudit(
+                    this,
+                    new Object[]{request},
+                    "거래 내역 동기화",
+                    "syncTransaction",
+                    "INSERT",
+                    "transactions",
+                    null,
+                    message,
+                    success
+            );
         }
 
-        // 6. 카테고리별 카드 내역 통계 캐싱 무효화
-        Set<String> keys = redisTemplate.keys("sumCategoryTransaction:" + userId + ":*");
-
-        if (!keys.isEmpty()) {
-            redisTemplate.delete(keys);
-        }
     }
 
     private ExternalTransactionResponse callCardTransactionAPI(String cardNumber, OffsetDateTime startDate, OffsetDateTime endDate) {

@@ -8,7 +8,7 @@ import java.math.BigDecimal;
  * 리포트용 카테고리별 합계 조회 DTO
  */
 @Schema(description = "리포트용 카테고리별 합계 조회 DTO")
-public record TransactionReportDTO(
+public record TransactionReportDto(
         @Schema(description = "카테고리명")
         String categoryName,
 

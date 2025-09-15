@@ -8,7 +8,6 @@ import com.budget.ai.transaction.dto.response.SumCategoryTransactionResponse;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import io.github.resilience4j.ratelimiter.RateLimiterConfig;
 import io.github.resilience4j.ratelimiter.RequestNotPermitted;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -20,7 +19,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-@Slf4j
 @Service
 public class OpenAIService {
 
@@ -88,8 +86,6 @@ public class OpenAIService {
     }
 
     private String callOpenAIApi(String prompt) {
-        log.info(">>>>> OpenAI API 호출 시작 <<<<<<<<<<<<");
-
         OpenAIRequest request = new OpenAIRequest(
                 MODEL,
                 List.of(new OpenAIRequest.Message("user", prompt)),
@@ -109,13 +105,11 @@ public class OpenAIService {
                     .block(Duration.ofSeconds(60));
 
             if (response == null || response.choices() == null || response.choices().isEmpty()) {
-                log.error(">>>>> OpenAI API 호출 실패 <<<<<<<<");
                 throw new CustomException(ErrorCode.API_CALL_WRONG_ANSWER);
             }
 
             String content = response.choices().get(0).message().content();
             if (content == null || !StringUtils.hasText(content)) {
-                log.error(">>>>> OpenAI API 호출 실패 <<<<<<<<");
                 throw new CustomException(ErrorCode.API_CALL_WRONG_ANSWER);
             }
 
@@ -127,7 +121,6 @@ public class OpenAIService {
         try {
             return call.call();
         } catch (RequestNotPermitted ex) {
-            log.error(">>>>> OpenAI API RateLimiter 초과 <<<<<<<<");
             throw new CustomException(ErrorCode.API_RATE_LIMIT_EXCEEDED);
         } catch (Exception ex) {
             throw new RuntimeException(ex);

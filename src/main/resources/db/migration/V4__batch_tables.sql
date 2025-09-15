@@ -127,3 +127,16 @@ CREATE TABLE BATCH_JOB_EXECUTION_CONTEXT
     CONSTRAINT JOB_EXEC_CTX_FK FOREIGN KEY (JOB_EXECUTION_ID)
         REFERENCES BATCH_JOB_EXECUTION (JOB_EXECUTION_ID)
 ) ENGINE=InnoDB;
+
+-- -----------------------------
+-- Batch Dead Letter
+-- -----------------------------
+CREATE TABLE BATCH_DEAD_LETTER
+(
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    step_name         VARCHAR(100),
+    input_data        JSON,
+    exception_class   VARCHAR(255),
+    exception_message TEXT,
+    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;

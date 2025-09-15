@@ -68,7 +68,7 @@ public class ReportController {
         return ResponseEntity.ok(SuccessResponse.of(report));
     }
 
-    @Operation(summary = "리포트 배치 실행", description = "리포트 배치를 실행합니다.")
+    @Operation(summary = "리포트 배치 수동 실행", description = "리포트 배치를 수동으로 실행합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "리포트 배치 성공"),
             @ApiResponse(responseCode = "401", description = "로그인 필요"),
@@ -77,6 +77,19 @@ public class ReportController {
     @PostMapping("/run-report-batch")
     public ResponseEntity<SuccessResponse<Void>> runReportBatch() {
         reportService.runBatchJob();
+
+        return ResponseEntity.ok(SuccessResponse.of());
+    }
+
+    @Operation(summary = "실패 배치 수동 재실행", description = "실패한 배치를 수동 재실행합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "재실행 성공"),
+            @ApiResponse(responseCode = "401", description = "로그인 필요"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @PostMapping("/run-dead-letter-report-batch")
+    public ResponseEntity<SuccessResponse<Void>> runDeadLetterReportBatch() {
+        reportService.runDeadLetterBatchJob();
 
         return ResponseEntity.ok(SuccessResponse.of());
     }

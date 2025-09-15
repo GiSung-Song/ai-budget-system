@@ -6,24 +6,22 @@ import com.budget.ai.category.Category;
 import com.budget.ai.category.CategoryRepository;
 import com.budget.ai.report.ReportRepository;
 import com.budget.ai.testsupport.TestDataFactory;
-import com.budget.ai.testsupport.container.TestContainerManager;
 import com.budget.ai.transaction.Transaction;
 import com.budget.ai.transaction.TransactionRepository;
 import com.budget.ai.transaction.TransactionStatus;
 import com.budget.ai.user.User;
-import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
-import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
-import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
@@ -32,22 +30,35 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Testcontainers
 @ActiveProfiles("test")
 class ReportJobTest {
 
+    static MySQLContainer<?> E2E_MYSQL = new MySQLContainer<>("mysql:8.0")
+            .withDatabaseName("e2edb")
+            .withUsername("root")
+            .withPassword("password");
+
     @DynamicPropertySource
-    static void properties(DynamicPropertyRegistry registry) {
-        TestContainerManager.registerMySQL(registry);
+    static void registerMySQL(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", E2E_MYSQL::getJdbcUrl);
+        registry.add("spring.datasource.username", E2E_MYSQL::getUsername);
+        registry.add("spring.datasource.password", E2E_MYSQL::getPassword);
+        registry.add("spring.datasource.driver-class-name", E2E_MYSQL::getDriverClassName);
+    }
+
+    static {
+        E2E_MYSQL.start();
     }
 
     @Autowired
     private JobLauncher jobLauncher;
 
     @Autowired
+    @Qualifier("saveReportJob")
     private Job saveReportJob;
 
     @Autowired
@@ -180,6 +191,11 @@ class ReportJobTest {
         List<Transaction> transactionList = List.of(tr1, tr2, tr3, tr4, tr5, tr6, tr7, tr8);
 
         transactionRepository.saveAll(transactionList);
+    }
+
+    @AfterAll
+    static void stop() {
+        E2E_MYSQL.stop();
     }
 
     @Test
