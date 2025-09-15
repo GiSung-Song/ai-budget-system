@@ -1,32 +1,27 @@
 package com.budget.ai.auth;
 
+import com.budget.ai.auth.dto.request.JwtPayload;
+import com.budget.ai.response.CustomException;
+import com.budget.ai.response.ErrorCode;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import javax.crypto.SecretKey;
 import java.security.MessageDigest;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.crypto.SecretKey;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
-import com.budget.ai.auth.dto.request.JwtPayload;
-import com.budget.ai.response.CustomException;
-import com.budget.ai.response.ErrorCode;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * JWT 토큰 생성, 검증, 파싱을 담당하는 클래스
  */
-@Slf4j
 @Component
 public class JwtTokenProvider {
 
@@ -77,7 +72,6 @@ public class JwtTokenProvider {
 
     private String generateToken(JwtPayload jwtPayload, Long expiration) {
         if (jwtPayload == null || jwtPayload.id() == null || !StringUtils.hasText(jwtPayload.email()) || !StringUtils.hasText(jwtPayload.name())) {
-            log.error("토큰 발행 중 필수 정보 누락");
             throw new CustomException(ErrorCode.MISSING_JWT_PAYLOAD);
         }
 
@@ -157,8 +151,6 @@ public class JwtTokenProvider {
             JwtPayload jwtPayload = new JwtPayload(userId, name, email);
             return jwtPayload;
         } catch (Exception e) {
-            log.error("Access 토큰 파싱 중 데이터 변환 실패");
-
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
     }
@@ -175,8 +167,6 @@ public class JwtTokenProvider {
         try {
             return Long.parseLong(body.getSubject());
         } catch (Exception e) {
-            log.error("Refresh 토큰 파싱 중 Subject 변환 실패");
-
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
     }
@@ -197,7 +187,6 @@ public class JwtTokenProvider {
             }
             return Optional.of(hexString.toString());
         } catch (Exception e) {
-            log.error("Access 토큰 해시 처리 중 오류 발생");
             return Optional.empty();
         }
     }
@@ -217,10 +206,8 @@ public class JwtTokenProvider {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (ExpiredJwtException e) {
-            log.error("토큰 파싱 중 이미 만료된 토큰");
             throw new CustomException(ErrorCode.EXPIRED_TOKEN);
         } catch (Exception e) {
-            log.error("토큰 파싱 중 유효하지 않은 토큰");
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
     }

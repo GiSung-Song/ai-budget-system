@@ -3,6 +3,8 @@ package com.budget.ai.auth;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+import com.budget.ai.logging.AuditLogUtil;
+import com.budget.ai.logging.aop.OperationLog;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -38,31 +40,57 @@ public class AuthService {
      * @throws CustomException 로그인 실패 시 예외 발생
      */
     @Transactional(readOnly = true)
+    @OperationLog(eventName = "로그인")
     public TokenResponse login(LoginRequest request) {
-        // 사용자 조회
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_LOGIN_REQUEST));
+        User user = null;
+        boolean success = false;
+        String message = null;
 
-        if (user.isDeleted()) {
-            throw new CustomException(ErrorCode.DELETED_USER);
+        try {
+            // 사용자 조회
+            user = userRepository.findByEmail(request.email())
+                    .orElseThrow(() -> new CustomException(ErrorCode.INVALID_LOGIN_REQUEST));
+
+            if (user.isDeleted()) {
+                throw new CustomException(ErrorCode.DELETED_USER);
+            }
+
+            // 비밀번호 검증
+            if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+                throw new CustomException(ErrorCode.INVALID_LOGIN_REQUEST);
+            }
+
+            JwtPayload jwtPayload = new JwtPayload(user.getId(), user.getName(), user.getEmail());
+
+            // 토큰 생성
+            String accessToken = jwtTokenProvider.generateAccessToken(jwtPayload);
+            String refreshToken = jwtTokenProvider.generateRefreshToken(jwtPayload);
+
+            String redisKey = "refresh:" + user.getId();
+
+            redisTemplate.opsForValue().set(redisKey, refreshToken, jwtTokenProvider.getRefreshTokenExpiration(), TimeUnit.MILLISECONDS);
+
+            success = true;
+            message = "로그인 완료";
+
+            return new TokenResponse(accessToken, refreshToken);
+        } catch (CustomException exception) {
+            message = "ErrorCode: " + exception.getErrorCode().getCode() + ", Message: " + exception.getErrorCode().getMessage();
+            throw exception;
+        } finally {
+            AuditLogUtil.logAudit(
+                    this,
+                    new Object[]{request},
+                    "로그인",
+                    "login",
+                    "SELECT",
+                    "users",
+                    user != null ? String.valueOf(user.getId()) : null,
+                    message,
+                    success
+            );
         }
 
-        // 비밀번호 검증
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new CustomException(ErrorCode.INVALID_LOGIN_REQUEST);
-        }
-
-        JwtPayload jwtPayload = new JwtPayload(user.getId(), user.getName(), user.getEmail());
-
-        // 토큰 생성
-        String accessToken = jwtTokenProvider.generateAccessToken(jwtPayload);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(jwtPayload);
-
-        String redisKey = "refresh:" + user.getId();
-
-        redisTemplate.opsForValue().set(redisKey, refreshToken, jwtTokenProvider.getRefreshTokenExpiration(), TimeUnit.MILLISECONDS);
-
-        return new TokenResponse(accessToken, refreshToken);
     }
 
     /**
@@ -72,6 +100,7 @@ public class AuthService {
      * @return 토큰 응답 데이터
      * @throws CustomException 토큰 재발급 실패 시 예외 발생
      */
+    @OperationLog(eventName = "토큰 재발급")
     public TokenResponse refreshToken(String refreshToken) {
         if (refreshToken == null) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
@@ -105,12 +134,33 @@ public class AuthService {
      * @param accessToken 액세스 토큰
      * @throws CustomException 로그아웃 실패 시 예외 발생
      */
+    @OperationLog(eventName = "로그아웃")
     public void logout(String accessToken) {
-        Date expiration = jwtTokenProvider.getTokenExpiration(accessToken);
+        boolean success = false;
+        String message = null;
 
-        long expirationTime = expiration.getTime() - System.currentTimeMillis();
-        jwtTokenProvider.tokenToHash(accessToken).ifPresent(hash -> {
-            redisTemplate.opsForValue().set(hash, "logout", expirationTime, TimeUnit.MILLISECONDS);
-        });
+        try {
+            Date expiration = jwtTokenProvider.getTokenExpiration(accessToken);
+
+            long expirationTime = expiration.getTime() - System.currentTimeMillis();
+            jwtTokenProvider.tokenToHash(accessToken).ifPresent(hash -> {
+                redisTemplate.opsForValue().set(hash, "logout", expirationTime, TimeUnit.MILLISECONDS);
+            });
+        } catch (CustomException exception) {
+            message = "ErrorCode: " + exception.getErrorCode().getCode() + ", Message: " + exception.getErrorCode().getMessage();
+            throw exception;
+        } finally {
+            AuditLogUtil.logAudit(
+                    this,
+                    new Object[]{accessToken},
+                    "로그아웃",
+                    "logout",
+                    null,
+                    null,
+                    null,
+                    message,
+                    success
+            );
+        }
     }
 } 

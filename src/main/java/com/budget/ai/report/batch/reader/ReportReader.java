@@ -2,7 +2,7 @@ package com.budget.ai.report.batch.reader;
 
 import com.budget.ai.report.batch.dto.UserReportInput;
 import com.budget.ai.transaction.TransactionQueryRepository;
-import com.budget.ai.transaction.dto.TransactionReportDTO;
+import com.budget.ai.transaction.dto.TransactionReportDto;
 import com.budget.ai.user.UserQueryRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -55,7 +55,7 @@ public class ReportReader implements ItemReader<UserReportInput> {
 
         Long userId = userIdIterator.next();
 
-        List<TransactionReportDTO> transactionCategorySum = transactionQueryRepository.getTransactionCategorySum(userId, startDate, endDate);
+        List<TransactionReportDto> transactionCategorySum = transactionQueryRepository.getTransactionCategorySum(userId, startDate, endDate);
 
         return new UserReportInput(userId, transactionCategorySum);
     }

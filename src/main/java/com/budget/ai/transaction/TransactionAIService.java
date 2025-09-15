@@ -1,6 +1,7 @@
 package com.budget.ai.transaction;
 
 import com.budget.ai.external.openai.OpenAIService;
+import com.budget.ai.logging.aop.OperationLog;
 import com.budget.ai.response.CustomException;
 import com.budget.ai.response.ErrorCode;
 import com.budget.ai.transaction.dto.response.CategorySavingResponse;
@@ -31,6 +32,7 @@ public class TransactionAIService {
      * @param endDate   조회 종료 날짜
      * @return
      */
+    @OperationLog(eventName = "카테고리별 절약 방법 추천")
     public CategorySavingResponse recommendSaving(Long userId, LocalDate startDate, LocalDate endDate) {
         // 1. 카테고리별 거래 내역 통계 조회
         SumCategoryTransactionResponse sumCategoryTransaction = transactionService.getSumCategoryTransaction(userId, startDate, endDate);
