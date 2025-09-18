@@ -1,5 +1,6 @@
 package com.budget.ai.logging.aop;
 
+import com.budget.ai.logging.LogMdcUtil;
 import com.budget.ai.logging.MaskingUtil;
 import com.budget.ai.logging.aop.dto.AuditLogDto;
 import com.budget.ai.logging.aop.dto.OperationLogDto;
@@ -50,7 +51,7 @@ public class LoggingAspect {
         Parameter[] parameters = signature.getMethod().getParameters();
 
         for (int i = 0; i < parameters.length; i++) {
-            if (parameters[i].isAnnotationPresent(AuditLEntityId.class)) {
+            if (parameters[i].isAnnotationPresent(AuditEntityId.class)) {
                 entityId = args[i] instanceof Long ? String.valueOf(args[i]) : "";
                 break;
             }
@@ -69,8 +70,13 @@ public class LoggingAspect {
                     methodName, maskingArgs, operationType,
                     entity, entityId, message, clientIp
             );
+
+            LogMdcUtil.setMdcField(failureLog);
+
             String jsonData = objectMapper.writeValueAsString(failureLog);
             log.error(jsonData, e);
+
+            LogMdcUtil.clearMdcField();
 
             throw e;
         }
@@ -82,8 +88,13 @@ public class LoggingAspect {
                 className, methodName, maskingArgs,
                 operationType, entity, entityId, clientIp
         );
+
+        LogMdcUtil.setMdcField(successLog);
+
         String successJsonLog = objectMapper.writeValueAsString(successLog);
         log.info(successJsonLog);
+
+        LogMdcUtil.clearMdcField();
 
         return result;
     }
@@ -113,8 +124,13 @@ public class LoggingAspect {
                     eventName, traceId, userId, className,
                     methodName, maskingArgs, message
             );
+
+            LogMdcUtil.setMdcField(failureLog);
+
             String jsonData = objectMapper.writeValueAsString(failureLog);
             log.error(jsonData, e);
+
+            LogMdcUtil.clearMdcField();
 
             throw e;
         }
@@ -125,8 +141,13 @@ public class LoggingAspect {
                 eventName, traceId, userId, duration,
                 className, methodName, maskingArgs
         );
+
+        LogMdcUtil.setMdcField(successLog);
+
         String successJsonLog = objectMapper.writeValueAsString(successLog);
         log.info(successJsonLog);
+
+        LogMdcUtil.clearMdcField();
 
         return result;
     }
@@ -145,4 +166,5 @@ public class LoggingAspect {
         }
         return e.getMessage();
     }
+
 }

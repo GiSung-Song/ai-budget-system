@@ -14,6 +14,7 @@
 - Build Tool: Gradle
 - HTTP Client: WebClient
 - Batch: Spring Batch
+- Logging: AOP + filebeat + Elasticsearch + kibana
 
 ## 주요기능
 1. **회원 관리**
@@ -38,3 +39,7 @@
 7. **리포트 배치**
     - 전달과 전전달의 카테고리별 통계 비교 데이터 저장
     - 실패 시 DB에 저장하여 수동 재실행 API
+8. **로그 모니터링**
+    - AOP + Logback + MDC 기반 JSON 로그
+    - Filebeat로 로그 파일 수집 후 Elasticsearch로 전송
+    - Kibana 이용하여 로그 분석 및 시각화 (이벤트별 실패 건수 등)

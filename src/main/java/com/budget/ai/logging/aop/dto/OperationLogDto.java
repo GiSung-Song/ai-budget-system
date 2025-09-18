@@ -6,6 +6,9 @@ import java.time.ZonedDateTime;
 
 @Schema(description = "운영 로그 DTO")
 public record OperationLogDto(
+        @Schema(description = "로그 타입")
+        String logType,
+
         @Schema(description = "Event")
         String eventName,
 
@@ -35,12 +38,12 @@ public record OperationLogDto(
 
         @Schema(description = "메시지")
         String message
-) {
+) implements LogDto {
     public static OperationLogDto successLog(
             String eventName, String traceId, String userId, Long duration,
             String className, String methodName, Object[] args
     ) {
-        return new OperationLogDto(
+        return new OperationLogDto("OPERATION",
                 eventName, traceId, userId, ZonedDateTime.now().toString(),
                 duration, className, methodName, args, true, "Success");
     }
@@ -49,7 +52,7 @@ public record OperationLogDto(
             String eventName, String traceId, String userId, String className,
             String methodName, Object[] args, String message
     ) {
-        return new OperationLogDto(
+        return new OperationLogDto("OPERATION",
                 eventName, traceId, userId, ZonedDateTime.now().toString(), null,
                 className, methodName, args, false, "Error : " + message);
     }

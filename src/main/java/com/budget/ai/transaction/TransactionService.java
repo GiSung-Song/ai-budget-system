@@ -8,7 +8,6 @@ import com.budget.ai.category.MerchantCategory;
 import com.budget.ai.category.MerchantCategoryRepository;
 import com.budget.ai.external.openai.OpenAIService;
 import com.budget.ai.logging.AuditLogUtil;
-import com.budget.ai.logging.aop.AuditLog;
 import com.budget.ai.logging.aop.OperationLog;
 import com.budget.ai.response.CustomException;
 import com.budget.ai.response.ErrorCode;
@@ -20,7 +19,6 @@ import com.budget.ai.transaction.dto.response.SumCategoryTransactionResponse;
 import com.budget.ai.transaction.dto.response.TransactionResponse;
 import com.budget.ai.user.User;
 import com.budget.ai.user.UserRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -42,7 +40,6 @@ import java.util.stream.Collectors;
 /**
  * 거래내역 관련 Service
  */
-@Slf4j
 @Service
 public class TransactionService {
 

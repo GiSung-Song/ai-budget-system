@@ -3,7 +3,7 @@ package com.budget.ai.card;
 import com.budget.ai.card.dto.request.RegisterCardRequest;
 import com.budget.ai.card.dto.response.CardInfoResponse;
 import com.budget.ai.logging.AuditLogUtil;
-import com.budget.ai.logging.aop.AuditLEntityId;
+import com.budget.ai.logging.aop.AuditEntityId;
 import com.budget.ai.logging.aop.AuditLog;
 import com.budget.ai.logging.aop.OperationLog;
 import com.budget.ai.response.CustomException;
@@ -91,7 +91,7 @@ public class CardService {
     @Transactional
     @OperationLog(eventName = "카드 삭제")
     @AuditLog(eventName = "카드 삭제", operationType = "DELETE", entity = "cards")
-    public void deleteCard(Long userId, @AuditLEntityId Long cardId) {
+    public void deleteCard(Long userId, @AuditEntityId Long cardId) {
         Card card = cardRepository.findByIdAndUserId(cardId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CARD_NOT_FOUND));
 

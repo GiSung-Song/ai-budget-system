@@ -100,7 +100,7 @@ public class SecurityConfig {
                         })
                 )
                 .addFilterBefore(requestTraceFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, RequestTraceFilter.class)
                 .httpBasic(httpBasic -> httpBasic.disable());
 
         return http.build();

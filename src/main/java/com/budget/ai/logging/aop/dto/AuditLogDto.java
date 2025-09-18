@@ -7,6 +7,9 @@ import java.time.ZonedDateTime;
 @Schema(description = "감사 로그 DTO")
 public record AuditLogDto(
 
+        @Schema(description = "로그 타입")
+        String logType,
+
         @Schema(description = "Event명")
         String eventName,
 
@@ -48,13 +51,13 @@ public record AuditLogDto(
 
         @Schema(description = "요청 클라이언트 IP")
         String clientIP
-) {
+) implements LogDto {
     public static AuditLogDto successLog(
             String eventName, String traceId, String userId, Long duration,
             String className, String methodName, Object[] args, String operationType,
             String entity, String entityId, String clientIP
     ) {
-        return new AuditLogDto(
+        return new AuditLogDto("AUDIT",
                 eventName, traceId, userId, ZonedDateTime.now().toString(),
                 duration, className, methodName, args, operationType,
                 entity, entityId, true, "Success", clientIP);
@@ -65,7 +68,7 @@ public record AuditLogDto(
             String methodName, Object[] args, String operationType,
             String entity, String entityId, String message, String clientIP
     ) {
-        return new AuditLogDto(
+        return new AuditLogDto("AUDIT",
                 eventName, traceId, userId, ZonedDateTime.now().toString(), null,
                 className, methodName, args, operationType, entity, entityId, false,
                 "Error : " + message, clientIP);

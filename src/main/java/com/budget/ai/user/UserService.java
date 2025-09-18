@@ -1,7 +1,7 @@
 package com.budget.ai.user;
 
 import com.budget.ai.logging.AuditLogUtil;
-import com.budget.ai.logging.aop.AuditLEntityId;
+import com.budget.ai.logging.aop.AuditEntityId;
 import com.budget.ai.logging.aop.AuditLog;
 import com.budget.ai.logging.aop.OperationLog;
 import com.budget.ai.response.CustomException;
@@ -92,7 +92,7 @@ public class UserService {
     @Transactional
     @AuditLog(eventName = "비밀번호 변경", operationType = "UPDATE", entity = "users")
     @OperationLog(eventName = "비밀번호 변경")
-    public void updatePassword(@AuditLEntityId Long userId, PasswordUpdateRequest request) {
+    public void updatePassword(@AuditEntityId Long userId, PasswordUpdateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
@@ -114,7 +114,7 @@ public class UserService {
     @Transactional
     @AuditLog(eventName = "회원 탈퇴", operationType = "UPDATE", entity = "users")
     @OperationLog(eventName = "회원 탈퇴")
-    public void deleteUser(@AuditLEntityId Long userId) {
+    public void deleteUser(@AuditEntityId Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
