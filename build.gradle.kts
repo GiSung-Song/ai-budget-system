@@ -57,6 +57,8 @@ dependencies {
 	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 	implementation("me.paulschwarz:spring-dotenv:3.0.0")
 
+	implementation("net.logstash.logback:logstash-logback-encoder:7.4")
+
 	// QueryDSL
 	implementation("com.querydsl:querydsl-jpa:${querydslVersion}:jakarta")
 	annotationProcessor("com.querydsl:querydsl-apt:${querydslVersion}:jakarta")

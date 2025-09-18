@@ -3,21 +3,72 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: news-mysql
+    container_name: budget-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: newsdb
+      MYSQL_DATABASE: budget
       TZ: Asia/Seoul
       MYSQL_CHARACTER_SET_SERVER: utf8mb4
       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
     ports:
       - "3307:3306"
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
 
   redis:
     image: redis:7.0
-    container_name: news-redis
+    container_name: budget-redis
     restart: always
     ports:
       - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    container_name: elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.monitoring.enabled: false
+      xpack.security.enabled: true
+      xpack.security.transport.ssl.enabled: true
+      ELASTIC_USERNAME: "elastic"
+      ELASTIC_PASSWORD: "elastic123!@#"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.10.1
+    container_name: kibana
+    environment:
+      - SERVER_NAME=kibana
+      - SERVER_HOST=0.0.0.0
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=elastic123!@#
+      - MONITORING_UI_CONTAINER_ELASTICSEARCH_ENABLED=true
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.10.1
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./infra/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/logs/app:ro
+    command: filebeat -e -strict.perms=false
+    depends_on:
+      - elasticsearch
+      - kibana
+
+volumes:
+  es_data:
+  mysql_data:
+  redis_data:

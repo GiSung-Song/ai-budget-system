@@ -34,6 +34,7 @@ public class JobLoggerListener implements JobExecutionListener {
                 .orElse("system");
 
         OperationLogDto dto = new OperationLogDto(
+                "OPERATION",
                 "JOB-START",
                 traceId,
                 userId,

@@ -35,6 +35,7 @@ public class StepLoggerListener implements StepExecutionListener {
                 .orElse("system");
 
         OperationLogDto dto = new OperationLogDto(
+                "OPERATION",
                 "STEP-START",
                 traceId,
                 userId,
